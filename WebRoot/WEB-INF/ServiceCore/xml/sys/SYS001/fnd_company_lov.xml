@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mapper>
+	<query>
+        <select id="fnd_com"><![CDATA[
+		select * from (    
+			select company_id,
+			       company_code,
+			       company_short_name,
+			       company_full_name,
+			       set_of_books_id,
+			       company_level_id,
+			       chief_position_id,
+			       parent_company_id,
+			       start_date_active,
+			       end_date_active,
+			      CONCAT(company_code, '-',company_short_name) company_desc
+			  from fnd_companies f
+			 where  f.end_date_active is null
+			    or f.end_date_active >= now()
+			 ) v
+		 ]]> 
+		    <where>
+				<name type="normal"><![CDATA[ #{$JQGRID}]]></name><!--拼接jqgrid自带的查询条件所用 -->
+			    <name type="normal"><![CDATA[ company_code like #{query_text} or company_short_name  like #{query_text}]]></name>
+			</where>
+		 <jqorderby>#{$JQORDERBY}</jqorderby>
+		  <orderby>company_code</orderby> 
+	    </select>
+	</query>
+</mapper>

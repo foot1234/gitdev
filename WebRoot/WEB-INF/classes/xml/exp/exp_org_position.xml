@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mapper>
+	<query>
+        <select id="list_position"><![CDATA[
+		select v.* from (
+		    SELECT 
+				  e.position_id,
+				  e.unit_id,
+				  (SELECT 
+				    CONCAT(u.unit_code, '-', u.description) 
+				  FROM
+				    exp_org_unit u 
+				  WHERE u.unit_id = e.unit_id) unit_desc,
+				  e.position_code,
+				  e.description,
+				  e.parent_position_id,
+				  e.company_id,
+				  (SELECT 
+				    CONCAT(
+				      f.company_code,
+				      '-',
+				      f.company_short_name
+				    ) 
+				  FROM
+				    fnd_companies f 
+				  WHERE f.company_id = e.company_id) company_desc,
+				  e.enabled_flag 
+				FROM
+				  exp_org_position e ) v
+		 ]]> 
+		    <where>
+				<name type="normal"><![CDATA[ #{$JQGRID}]]></name><!--拼接jqgrid自带的查询条件所用 -->
+				<name type="normal"><![CDATA[ position_code like #{position_code}]]></name>
+				<name type="normal"><![CDATA[ description like #{description}]]></name>
+				<name type="normal"><![CDATA[ company_id = #{company_id}]]></name>
+				<name type="normal"><![CDATA[ enabled_flag = #{enabled_flag}]]></name>
+			    <name type="normal"><![CDATA[ position_code like #{query_text} or description  like #{query_text}]]></name>
+			</where>
+		 <jqorderby>#{$JQORDERBY}</jqorderby>
+		  <orderby>position_code</orderby> 
+	    </select>
+	</query>
+	<update>
+		<execute id="edit"><![CDATA[
+		  update exp_org_position s
+			     set s.unit_id =#{unit_id},
+			          s.position_code=#{position_code},
+			          s.description=#{description},
+			          s.parent_position_id=#{parent_position_id},
+			          s.company_id=#{company_id},
+			           s.enabled_flag=#{enabled_flag},
+			          s.last_update_date=now(),
+			          s.last_updated_by=#{/session/user_id}
+			   where s.position_id =#{position_id};
+	 ]]>
+	    </execute>
+	    <execute id="add"><![CDATA[ 
+		insert into exp_org_position(
+						unit_id,          
+						position_code,  
+						description,  
+						parent_position_id,
+						company_id,        
+						enabled_flag,      
+						created_by,        
+						creation_date,     
+						last_updated_by,   
+						last_update_date)VALUES(
+					  #{unit_id},
+					  #{position_code},
+					  #{description},
+					  #{parent_position_id},
+					  #{company_id},
+					  #{enabled_flag},
+					  #{/session/user_id},
+					  now(),
+					  #{/session/user_id},
+					  now());
+		 ]]>
+	    </execute>
+	</update>
+</mapper>

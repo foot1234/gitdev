@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mapper>
+	<query>
+		<select id="load"><![CDATA[
+		 select * from(SELECT e.recipient_set_id,
+			       e.recipient_sequence,
+			       e.node_id,
+			       e.rule_sequence,
+			       e.rule_code,
+			       e.parameter_1_value,
+			       e.parameter_1_desc,
+			       e.parameter_2_value,
+			       e.parameter_2_desc,
+			       e.parameter_3_value,
+			       e.parameter_3_desc,
+			       e.parameter_4_value,
+			       e.parameter_4_desc,
+			       rv.description AS rule_code_display,
+			       rv.parameter_1_type,
+			       rv.parameter_1_url
+			  FROM wfl_node_recipient_set e
+			  LEFT OUTER JOIN wfl_recipient_rules_vl rv
+			    ON e.rule_code = rv.rule_code
+			where node_id=#{node_id})
+		]]>
+			<where>
+				<name type="normal"><![CDATA[ #{$JQGRID}]]></name><!--拼接jqgrid自带的查询条件所用 -->
+			</where>
+			<orderby>recipient_sequence</orderby>
+			<jqorderby>#{$JQORDERBY}</jqorderby>
+		</select>
+	</query>
+	<update>
+		<execute id="update"><![CDATA[
+		update t_user set username='@@@'  where id=#{id};
+	     ]]></execute>
+		 <execute id="login"><!--输出参数匹配-->
+		   <parameters>
+                <parameter type="out">#{/session/encryted_session_id} := v_encryted_session_id</parameter>
+                <parameter type="out">#{message}:= v_message</parameter>
+                <parameter type="out">#{/session/user_id} := v_user_id</parameter>
+                <parameter type="out">#{/session/session_id} := v_session_id</parameter>
+            </parameters>
+		 <![CDATA[
+		    declare
+            	   vsid number;
+            	   v_encryted_session_id varchar2(100);
+            	   v_message varchar2(300);
+            	   v_user_id number;
+            	   v_session_id number;
+                begin
+                    sys_login_pkg.login(
+                        p_user_name           	=>#{user_name},
+                        p_password           	=>#{user_password},
+                        p_language            	=>#{user_language},
+                        p_ip                  		=>#{/session/address},
+                        p_session_id          	=>vsid,
+                        p_encryted_session_id =>v_encryted_session_id,
+                        p_error_message        =>v_message
+                    );
+                    if vsid != -1 then
+				        select user_id, vsid
+				        into   v_user_id, v_session_id
+				        from   sys_session
+				        where  session_id = vsid;
+				    end if;
+                end;
+	     ]]></execute>
+	     
+	     <execute id="sys_role_select"><!--输出参数匹配-->
+		   <parameters>
+                <parameter type="out">#{/session/role_id} := v_role_id</parameter>
+                <parameter type="out">#{/session/company_id} := v_company_id</parameter>
+            </parameters>
+		 <![CDATA[
+		    declare
+            	   v_role_id number:=  #{role_id};
+            	   v_company_id number:=#{company_id};
+                begin
+                   sys_login_pkg.role_select(
+                       #{/session/encryted_session_id},
+                        #{role_id},
+                        #{company_id},
+                        null,
+                        #{/session/address},
+                        null);
+                end;
+	     ]]></execute>
+	</update>
+</mapper>

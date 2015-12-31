@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mapper>
+	<query>
+        <select id="list"><![CDATA[
+			select * from (SELECT e.node_id,
+			       e.workflow_id,
+			       e.sequence_num,
+			       e.approval_type,
+			       (select v.code_value_name
+			          from sys_codes a, sys_code_values_vl v
+			         where a.code_id = v.code_id
+			           and a.code = 'WFL_WORKFLOW_APPROVAL_TYPE'
+			           and a.enabled_flag = 'Y'
+			           and v.code_value = e.approval_type) approval_type_display,
+			       e.quantity,
+			       e.recipient_type,
+			       (select v.code_value_name
+			          from sys_codes a, sys_code_values_vl v
+			         where a.code_id = v.code_id
+			           and a.code = 'WFL_WORKFLOW_RECIPIENT_TYPE'
+			           and a.enabled_flag = 'Y'
+			           and v.code_value = e.recipient_type) recipient_type_display,
+			       e.can_deliver_to,
+			       e.can_auto_pass,
+			       e.can_add_approver,
+			       e.can_no_approver,
+			       e.can_add_notification,
+			       e.form_name,
+			       (select service_display
+			          from wfl_workflow_page_vl
+			         where service_name = e.form_name) AS form_name_display,
+			       e.form_width,
+			       e.form_height,
+			       (select DESCRIPTION_TEXT
+			          from fnd_descriptions
+			         where DESCRIPTION_ID = e.name_id
+			           and Language = 'ZHS') AS name,
+			       e.name_id,
+			       e.notify_period,
+			       e.notify_period_length,
+			       e.process_date,
+			       e.process_date_unit_id,
+			       e.mail_notify,
+			       e.is_date_limited,
+			       e.is_self_re_commit,
+			       e.notify_on_finish,
+			       e.is_comment_access_control,
+			       (select DESCRIPTION_TEXT
+			          from fnd_descriptions
+			         where DESCRIPTION_ID = e.description_id
+			           and Language = 'ZHS') AS description,
+			       e.description_id,
+			       e.check_proc,
+			       e.pre_node_proc
+			  FROM wfl_workflow_node e
+			) v
+		 ]]>
+		 <where>
+				<name type="normal"><![CDATA[ #{$JQGRID}]]></name><!--拼接jqgrid自带的查询条件所用 -->
+				<name type="normal"><![CDATA[ workflow_id =  #{workflow_id}]]></name>
+				<name type="normal"><![CDATA[ node_id =  #{node_id}]]></name>
+			</where>
+		 <orderby>sequence_num</orderby> 
+		 <jqorderby>#{$JQORDERBY}</jqorderby>
+		</select>
+		 <select id="form_display"><![CDATA[
+			SELECT t1.RECORD_ID,t1.SERVICE_NAME  display_form,t1.SERVICE_NAME  update_form,t1.SERVICE_DISPLAY,t1.SERVICE_DISPLAY form_name_display,t1.DESCRIPTION
+           FROM WFL_WORKFLOW_PAGE_VL t1
+		 ]]>
+		</select>
+		 <select id="finish_procedure"><![CDATA[
+			SELECT t1.RECORD_ID,t1.WORKFLOW_ID,t1.PROC_NAME,t1.PROC_NAME finish_procedure,t1.PROC_DISPLAY,t1.DESCRIPTION,t1.PROC_TYPE
+           FROM WFL_WORKFLOW_PROCEDURE_VL t1 where t1.workflow_id= #{workflow_id} and t1.proc_type = 60
+		 ]]>
+		</select>
+		
+     </query>
+ <!-- **************************************************************************************************************************** -->
+    <update>
+    	<execute id="del"><![CDATA[
+				begin
+				 delete from wfl_workflow_node w where w.node_id =  #{node_id};
+			   end;   
+			 ]]>
+	    </execute>
+	   <execute id="add">
+	        <parameters>
+                <parameter type="out">#{node_id} := v_node_id</parameter>
+            </parameters>
+	   <![CDATA[
+	           declare
+                  v_fnd_description_id number;
+                  v_node_id number;
+					begin
+					    select wfl_workflow_node_s.nextval into v_node_id from dual;
+					  	v_fnd_description_id:=  fnd_description_pkg.get_fnd_description_id;
+					    fnd_description_pkg.insert_fnd_descriptions(p_description_id   =>v_fnd_description_id,
+					                                              p_ref_table        =>'WFL_WORKFLOW_NODE',
+					                                              p_ref_field        =>'NAME_ID',
+					                                              p_description_text =>#{name},
+					                                              p_created_by       =>#{/session/user_id},
+					                                              p_last_updated_by  =>#{/session/user_id},
+					                                              p_language_code    =>'ZHS');
+							  insert into wfl_workflow_node
+							    (node_id,
+							     workflow_id,
+							     sequence_num,
+							     approval_type,
+							     recipient_type,
+							     form_name,
+							     name_id,
+							     description_id,
+							     created_by,
+							     creation_date,
+							     last_updated_by,
+							     last_update_date)
+							  values
+							    (v_node_id,
+							     #{workflow_id},
+							     #{sequence_num},
+							     #{approval_type},
+							     #{recipient_type},
+							     #{form_name},
+							     v_fnd_description_id,
+							     v_fnd_description_id,
+							     #{/session/user_id},
+							     sysdate,
+							     #{/session/user_id},
+							     sysdate);
+					end;
+			 ]]>
+	    </execute>
+	    <execute id="edit"><![CDATA[
+				begin
+				   fnd_description_pkg.update_fnd_descriptions(p_description_id   =>#{name_id},
+					                                              p_description_text =>#{name},
+					                                              p_last_updated_by  =>#{/session/user_id},
+					                                              p_language_code    =>'ZHS');
+					update  wfl_workflow_node w  set  
+							     w.sequence_num= #{sequence_num},
+							     w.approval_type= #{approval_type},
+							     w.recipient_type= #{recipient_type},
+							     w.form_name= #{form_name},
+							     w.last_updated_by=#{/session/user_id},
+							     w.last_update_date =sysdate  
+							     where  w.node_id= #{node_id};                                     
+			   end;   
+			 ]]>
+	    </execute>
+	    <execute id="edit_detail"><![CDATA[
+				begin
+				   fnd_description_pkg.update_fnd_descriptions(p_description_id   =>#{name_id},
+					                                              p_description_text =>#{name},
+					                                              p_last_updated_by  =>#{/session/user_id},
+					                                              p_language_code    =>'ZHS');
+					update  wfl_workflow_node w  set  
+							     w.sequence_num= #{sequence_num},
+							     w.approval_type= #{approval_type},
+							     w.recipient_type= #{recipient_type},
+							     w.form_name= #{form_name},
+							     w.mail_notify=#{mail_notify},
+							     w.can_auto_pass=#{can_auto_pass},
+							     w.can_no_approver=#{can_no_approver},
+							     w.can_add_approver=#{can_add_approver},
+							     w.can_deliver_to=#{can_deliver_to},
+							     w.is_self_re_commit=#{is_self_re_commit},
+							     w.last_updated_by=#{/session/user_id},
+							     w.last_update_date =sysdate  
+							     where  w.node_id= #{node_id};                                     
+			   end;   
+			 ]]>
+	    </execute>
+    </update>
+</mapper>

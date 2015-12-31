@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mapper>
+	<query>
+		<select id="load"><![CDATA[
+			select v.*
+			  from sys_codes s, sys_code_values v
+			 where s.code = 'FUNCTION_TYPE'
+			   and s.enabled_flag = 'Y'
+			   and s.code_id = v.code_id
+			   and v.enabled_flag='Y'
+		]]>
+			<!--<where>
+				<name type="normal"><![CDATA[ #{$JQGRID}]]></name>
+				<name type="normal"><![CDATA[ workflow_type_code like #{workflow_type_code}]]></name>
+				<name type="normal"><![CDATA[ workflow_type_desc like #{workflow_type_desc}]]></name>
+				<name type="normal"><![CDATA[ description=#{description}]]></name> 
+			   <name type="force"><![CDATA[ trunc(start_date)>=to_date(#{start_date},'yyyy-mm-dd')]]></name>
+			</where>
+			<orderby>start_date desc,user_name</orderby>
+			<jqorderby>#{$JQORDERBY}</jqorderby>-->
+		</select>
+	</query>
+</mapper>

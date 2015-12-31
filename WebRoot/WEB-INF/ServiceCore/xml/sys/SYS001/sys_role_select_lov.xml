@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mapper>
+	<query>
+        <select id="sys_role"><![CDATA[
+		select * from (select role_id, role_code, description, role_name, start_date, end_date,last_update_date
+		  from sys_role s
+		 where s.end_date is null
+		    or s.end_date >= now() ) v
+		 ]]> 
+		    <where>
+				<name type="normal"><![CDATA[ #{$JQGRID}]]></name><!--拼接jqgrid自带的查询条件所用 -->
+			    <name type="normal"><![CDATA[ role_code like #{query_text} or role_name  like #{query_text}]]></name>
+			</where>
+		 <jqorderby>#{$JQORDERBY}</jqorderby>
+		  <orderby>last_update_date</orderby> 
+	    </select>
+	</query>
+</mapper>

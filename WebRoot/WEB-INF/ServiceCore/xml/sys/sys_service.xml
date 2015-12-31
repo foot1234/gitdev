@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mapper>
+	<query>
+        <select id="load"><![CDATA[
+		select * from ( select service_id,
+	       service_name,
+	       is_entry_page,
+	       is_access_checked,
+	       is_login_required,
+	       title,
+	       is_system_access,
+	       creation_date,
+	       last_update_date,
+	       created_by,
+	       last_updated_by
+       from sys_service order by service_id desc) v
+		 ]]>
+		 <where>
+				<name type="normal"><![CDATA[ #{$JQGRID}]]></name><!--拼接jqgrid自带的查询条件所用 -->
+				<name type="normal"><![CDATA[ service_name like #{service_name}]]></name>
+				<name type="normal"><![CDATA[ title like #{title}]]></name>
+				<name type="normal"><![CDATA[ is_access_checked = #{is_access_checked}]]></name>
+				<name type="normal"><![CDATA[ is_login_required = #{is_login_required}]]></name>
+				<name type="normal"><![CDATA[ is_system_access = #{is_system_access}]]></name>
+			   <name type="normal"><![CDATA[ service_name like #{query_text} or title  like #{query_text}]]></name>
+			</where>
+		 <jqorderby>#{$JQORDERBY}</jqorderby>
+		</select>
+	</query>
+	<update>
+	<!--add、del 和 edit 为jqgrid 内定参数-->
+	<execute id="del"><![CDATA[
+			delete from sys_service  where sys_service.service_id=#{service_id};
+	 ]]>
+	    </execute>
+		<execute id="edit"><![CDATA[
+			update sys_service t set 
+						t.service_name 		=#{service_name}, 
+						t.is_entry_page		=#{is_entry_page}, 
+						t.is_access_checked=#{is_access_checked}, 
+						t.is_login_required	=#{is_login_required}, 
+						t.title						=#{title}, 
+						t.is_system_access	=#{is_system_access}, 
+						t.last_update_date	=now(), 
+						t.last_updated_by	=#{/session/user_id}
+	      where t.service_id=#{service_id};
+	 ]]>
+	    </execute>
+	    <execute id="add"><![CDATA[
+		       insert into sys_service
+				  (
+				   service_name,
+				   is_entry_page,
+				   is_access_checked,
+				   is_login_required,
+				   title,
+				   is_system_access,
+				   creation_date,
+				   last_update_date,
+				   created_by,
+				   last_updated_by)
+				values
+				  (
+				   #{service_name},
+				   0,
+				   #{is_access_checked},
+				   #{is_login_required},
+				   #{title},
+				   #{is_system_access},
+				   now(), 
+				   now(), 
+				   #{/session/user_id},
+				   #{/session/user_id}
+				  ); 
+		 ]]>
+	    </execute>
+	</update>
+</mapper>

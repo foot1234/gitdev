@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mapper>
+	<query>
+        <select id="accounts"><![CDATA[
+		 	select a.employee_id,
+			  a.line_number,
+			  a.bank_code,
+			  a.bank_name,
+			  a.bank_location_code,
+			  a.bank_location,
+			  a.province_code,
+			  a.province_name,
+			  a.city_code,
+			  a.city_name,
+			  a.account_number,
+			  a.account_name,
+			  a.notes,
+			  a.primary_flag,
+			  a.enabled_flag,
+			  a.exp_employee_accounts_id
+			  from exp_employee_accounts a where a.employee_id=#{employee_id} 
+		 ]]>
+		 <orderby>line_number</orderby>
+		</select>
+	</query>
+	<update>
+		<execute id="add"><![CDATA[
+		INSERT INTO exp_employee_accounts (
+					employee_id,         
+					line_number ,       
+					bank_code ,         
+					bank_name ,          
+					bank_location_code, 
+					bank_location    ,   
+					province_code,      
+					province_name   ,    
+					city_code ,          
+					city_name  ,         
+					account_number  ,    
+					account_name  ,      
+					notes       ,        
+					primary_flag ,       
+					enabled_flag  ,      
+					creation_date ,      
+					created_by ,         
+					last_update_date ,   
+					last_updated_by
+					)
+					  VALUES (	
+					#{employee_id},         
+					#{line_number},       
+					#{bank_code},         
+					#{bank_name},          
+					#{bank_location_code}, 
+					#{bank_location},   
+					#{province_code},      
+					#{province_name},    
+					#{city_code},          
+					#{city_name},         
+					#{account_number},    
+					#{account_name},      
+					#{notes},        
+					#{primary_flag},       
+					#{enabled_flag},      
+					now(),      
+					#{/session/user_id} ,         
+					now() ,        
+					#{/session/user_id});
+	 ]]>
+	    </execute> 
+	    	<execute id="edit"><![CDATA[
+		update exp_employee_accounts e set
+					e.employee_id=#{employee_id},                 
+					e.line_number=#{line_number},        
+					e.bank_code=#{bank_code},          
+					e.bank_name=#{bank_name},           
+					e.bank_location_code=#{bank_location_code},    
+					e.bank_location   =#{bank_location},    
+					e.province_code=#{province_code},         
+					e.province_name  =#{province_name},     
+					e.city_code=#{city_code},           
+					e.city_name =#{city_name},          
+					e.account_number =#{account_number},     
+					e.account_name =#{account_name},       
+					e.notes      =#{notes},         
+					e.primary_flag=#{primary_flag},        
+					e.enabled_flag =#{enabled_flag},           
+					e.last_update_date=now(),    
+					e.last_updated_by=#{/session/user_id}        
+              where e.exp_employee_accounts_id=#{exp_employee_accounts_id};
+	 ]]>
+	    </execute> 
+	    	<execute id="del"><![CDATA[
+		delete from exp_employee_accounts 
+              where exp_employee_accounts_id=#{exp_employee_accounts_id};
+	 ]]>
+	    </execute>
+	</update>
+</mapper>

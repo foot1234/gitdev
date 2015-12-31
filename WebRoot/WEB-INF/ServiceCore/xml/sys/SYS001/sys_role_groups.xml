@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mapper>
+	<query>
+        <select id="load"><![CDATA[
+		   select 
+		        t.user_role_group_id,
+		        t.role_id,
+		        t.user_id,
+		       t.company_id,
+		        DATE_FORMAT(t.start_date, '%Y-%m-%d') start_date,
+		        DATE_FORMAT(t.end_date, '%Y-%m-%d') end_date,
+		       (select s.role_code from sys_role s where s.role_id = t.role_id) role_code,
+		       (select s.description from sys_role s where s.role_id = t.role_id) role_desc,
+		       (select f.company_code
+		          from fnd_companies f
+		         where f.company_id = t.company_id) company_code,
+		       (select f.company_short_name
+		          from fnd_companies f
+		         where f.company_id = t.company_id) company_desc
+		  from sys_user_role_groups t where t.user_id= #{user_id}
+		 ]]>
+	    </select>
+	</query>
+	<update>
+		<execute id="edit"><![CDATA[
+			update sys_user_role_groups s set 
+				s.user_id=#{user_id}, 
+				s.role_id=#{role_id}, 
+				s.company_id=#{company_id}, 
+				s.start_date=DATE_FORMAT(#{start_date},'%Y-%m-%d'),
+				s.end_date=DATE_FORMAT(#{end_date},'%Y-%m-%d'),
+				s.last_updated_by=#{/session/user_id}, 
+				s.last_update_date =now()
+				where s.user_role_group_id=#{user_role_group_id};
+	 ]]>
+	    </execute>
+	    <execute id="add"><![CDATA[
+			 insert into sys_user_role_groups
+				(
+				user_id, 
+				role_id, 
+				company_id, 
+				start_date, 
+				end_date, 
+				created_by, 
+				creation_date, 
+				last_updated_by, 
+				last_update_date
+				)values(
+				#{user_id}, 
+				#{role_id}, 
+				#{company_id}, 
+				DATE_FORMAT(#{start_date},'%Y-%m-%d'),
+				DATE_FORMAT(#{end_date},'%Y-%m-%d'), 
+				#{/session/user_id}, 
+				now(), 
+				#{/session/user_id}, 
+				now()); 
+		 ]]>
+	    </execute>
+	</update>
+</mapper>

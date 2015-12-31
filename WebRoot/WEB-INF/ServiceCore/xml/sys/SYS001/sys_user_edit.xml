@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mapper>
+	<query>
+        <select id="load"><![CDATA[
+		 SELECT * FROM (
+   SELECT SU.USER_NAME,
+          USER_ID,
+          SU.DESCRIPTION,
+          DATE_FORMAT(SU.START_DATE, '%Y-%m-%d') START_DATE,
+          DATE_FORMAT(SU.END_DATE, '%Y-%m-%d') END_DATE,
+          IF(SU.FROZEN_FLAG='Y', '已冻结', '未冻结') P_FROZEN_FLAG,
+          SU.FROZEN_FLAG,
+          su.EMPLOYEE_ID,
+          DATE_FORMAT(SU.FROZEN_DATE, '%Y-%m-%d') FROZEN_DATE,
+          (SELECT EE.EMPLOYEE_CODE
+			  FROM EXP_EMPLOYEES EE
+			 WHERE EE.EMPLOYEE_ID = SU.EMPLOYEE_ID) EMPLOYEE_CODE,
+		   (SELECT EE.NAME
+			  FROM EXP_EMPLOYEES EE
+			 WHERE EE.EMPLOYEE_ID = SU.EMPLOYEE_ID) EMPLOYEE_NAME,
+			 su.encrypted_foundation_password,
+			 su.encrypted_user_password,
+			 (SELECT COUNT(1)
+				  FROM sys_user_role_groups t
+				 WHERE (t.end_date IS NULL OR t.end_date >= NOW())
+				   AND t.user_id = su.user_id) sub_count
+     FROM sys_user su ORDER BY su.USER_NAME	) v
+		 ]]>
+		 <where>
+				<name type="normal"><![CDATA[ #{$JQGRID}]]></name><!--拼接jqgrid自带的查询条件所用 -->
+				<name type="normal"><![CDATA[ upper(USER_NAME)   like  #{user_name}]]></name>
+				<name type="normal"><![CDATA[ EMPLOYEE_CODE like  #{employee_code}]]></name>
+				<name type="normal"><![CDATA[ EMPLOYEE_NAME like  #{employee_name}]]></name>
+				<name type="normal"><![CDATA[ FROZEN_FLAG = #{frozen_flag}]]></name>
+				<name type="normal"><![CDATA[ DESCRIPTION like  #{description}]]></name>
+				<name type="normal"><![CDATA[ USER_NAME like #{query_text} or DESCRIPTION  like #{query_text} or EMPLOYEE_CODE  like #{query_text} or EMPLOYEE_NAME  like #{query_text}]]></name>
+			</where>
+		 <jqorderby>#{$JQORDERBY}</jqorderby>
+		</select>
+		<select id="employees"><![CDATA[
+		select v.* from (select * from exp_employees e where e.enabled_flag='Y') v
+		 ]]>
+		 <where>
+				<name type="normal"><![CDATA[ #{$JQGRID}]]></name><!--拼接jqgrid自带的查询条件所用 -->
+			    <name type="normal"><![CDATA[ employee_code like #{query_text} or name  like #{query_text}]]></name>
+			</where>
+		 <jqorderby>#{$JQORDERBY}</jqorderby>
+		</select>
+	</query>
+	<update>
+		
+		<execute id="add"><![CDATA[
+		    insert into sys_user
+			  (
+			   user_name,
+			   encrypted_foundation_password,
+			   encrypted_user_password,
+			   start_date,
+			   end_date,
+			   description,
+			   password_lifespan_days,
+			   password_lifespan_access,
+			   employee_id,
+			   customer_id,
+			   vender_id,
+			   frozen_flag,
+			   frozen_date,
+			   password_start_date,
+			   menu_type,
+			   last_update_date,
+			   last_updated_by,
+			   creation_date,
+			   created_by)
+			values
+			  (
+			   #{user_name},
+			   md5(#{encrypted_foundation_password}),
+			   md5(#{encrypted_user_password}),
+			   DATE_FORMAT(#{start_date},'%Y-%m-%d'),
+			   DATE_FORMAT(#{end_date},'%Y-%m-%d'),
+			   #{description},
+			   null,
+			   null,
+			   #{employee_id},
+			   null,/*customer_id,*/
+			   null,/*--vender_id,*/
+			   #{frozen_flag},
+			   DATE_FORMAT(#{frozen_date},'%Y-%m-%d'),
+			    now(),
+			   null,
+			   now(),
+			   #{/session/user_id},
+			   now(),
+			   #{/session/user_id});
+	 ]]>
+	    </execute>
+		<execute id="edit"><![CDATA[
+			update sys_user s set 
+					s.user_name					=#{user_name},
+					s.description					=#{description},
+					s.start_date					=DATE_FORMAT(#{start_date},'%Y-%m-%d'),
+					s.end_date						=DATE_FORMAT(#{end_date},'%Y-%m-%d'),
+					s.employee_id			    =#{employee_id},
+					s.encrypted_foundation_password=if(#{encrypted_foundation_password}=s.encrypted_foundation_password,s.encrypted_foundation_password,md5(#{encrypted_foundation_password})),
+					s.encrypted_user_password=if(#{encrypted_user_password}=s.encrypted_user_password,s.encrypted_user_password,md5(#{encrypted_user_password})),
+					s.frozen_date					=DATE_FORMAT(#{frozen_date},'%Y-%m-%d'),
+					s.frozen_flag					    =#{frozen_flag},
+					s.password_start_date    =now()
+					where s.user_id=#{user_id};                         		
+	 ]]>
+	    </execute>
+	</update>
+</mapper>

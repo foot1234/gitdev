@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mapper>
+	<query>
+		<select id="load"><![CDATA[
+		 select * from(select * from sys_user s where s.user_id>#{/session/user_id})
+		]]>
+			<where>
+				<name type="normal"><![CDATA[ #{$JQGRID}]]></name><!--拼接jqgrid自带的查询条件所用 -->
+				<name type="normal"><![CDATA[ user_id=#{user_id}]]></name>
+				<name type="normal"><![CDATA[ user_name=#{user_name}]]></name>
+				<name type="normal"><![CDATA[ description=#{description}]]></name>
+				<name type="normal"><![CDATA[ trunc(start_date)>=to_date(#{start_date},'yyyy-mm-dd')]]></name><!-- 
+					强制拼接的条件 -->
+			</where>
+			<orderby>start_date desc,user_name</orderby>
+			<jqorderby>#{$JQORDERBY}</jqorderby>
+		</select>
+
+		<select id="list"><![CDATA[
+		select * from sys_user s where trunc(s.start_date)>=to_date(#{start_date},'yyyy-mm-dd')
+		]]>
+			<where>
+				<name type="normal">user_id=#{user_id}</name>
+				<name type="normal">user_name=#{user_name}</name>
+				<name type="normal">description=#{description}</name>
+			</where>
+			<orderBy>start_date desc,user_name</orderBy>
+		</select>
+	</query>
+	<update>
+		<execute id="update"><![CDATA[
+		update t_user set username='@@@'  where id=#{id};
+	     ]]></execute>
+		 <execute id="login"><!--输出参数匹配-->
+		   <parameters>
+                <parameter type="out">#{/session/encryted_session_id} := @encryted_session_id</parameter>
+                <parameter type="out">#{message}:= @message</parameter>
+                <parameter type="out">#{/session/user_id} := @user_id</parameter>
+                <parameter type="out">#{/session/session_id} := @session_id</parameter>
+            </parameters>
+		 <![CDATA[
+		        call  sys_login(
+                        #{user_name},
+                        #{user_password},
+                        #{user_language},
+                        #{/session/address},
+                        @session_id,
+                        @user_id,
+                        @encryted_session_id,
+                        @message
+                    );
+	     ]]></execute>
+	     
+	     <execute id="sys_role_select"><!--输出参数匹配-->
+		   <parameters>
+                <parameter type="out">#{/session/role_id} := @out_role_id</parameter>
+                <parameter type="out">#{/session/company_id} := @out_company_id</parameter>
+                <parameter type="out">#{error_message} := @error_message</parameter>
+            </parameters>
+		 <![CDATA[
+		       call
+                   sys_role_select(
+                       #{/session/encryted_session_id},
+                        #{role_id},
+                        #{company_id},
+                        null,
+                        #{/session/address},
+                        null,
+                        @out_role_id,
+                        @out_company_id,
+                        @error_message);
+	     ]]></execute>
+	</update>
+</mapper>

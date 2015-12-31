@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mapper>
+	<query>
+        <select id="load"><![CDATA[
+			SELECT * FROM (SELECT t.function_id,
+			       t.function_code,
+			       t.description,
+			       t.function_type,
+			       (SELECT v.code_value_name
+			          FROM sys_codes s, sys_code_values v
+			         WHERE s.code_id = v.code_id
+			           AND s.code = 'FUNCTION_TYPE'
+			           AND v.enabled_flag = 'Y'
+			           AND v.code_value = t.function_type) function_type_desc,
+			       t.parent_function_id,
+			        (SELECT s.description
+			          FROM sys_function s
+			         WHERE s.function_id = t.parent_function_id) parent_function_desc,
+			       t.module_id,
+			       t.icon,
+			       t.service_id,
+			       (SELECT s.service_name
+			          FROM sys_service s
+			         WHERE s.service_id = t.service_id) service_name,
+			       t.sequence,
+			       t.creation_date,
+			       t.created_by,
+			       t.last_update_date,
+			       t.last_updated_by,
+			       (SELECT COUNT(1) FROM  sys_function_service s WHERE s.function_id=t.function_id) sub_count
+			  FROM sys_function t) v
+		 ]]>
+		 <where>
+				<name type="normal"><![CDATA[ #{$JQGRID}]]></name><!--拼接jqgrid自带的查询条件所用 -->
+				<name type="normal"><![CDATA[ function_type = #{function_type}]]></name>
+				<name type="normal"><![CDATA[ function_id = #{function_id}]]></name>
+				<name type="normal"><![CDATA[ function_code like #{function_code}]]></name>
+			    <name type="normal"><![CDATA[ description like #{description}]]></name>
+			    <name type="normal"><![CDATA[ function_type like #{function_type}]]></name>
+			    <name type="normal"><![CDATA[ service_name like #{service_name}]]></name>
+			   <name type="normal"><![CDATA[ function_code like #{query_text} or description  like #{query_text} or function_type_desc  like #{query_text} or service_name  like #{query_text}]]></name>
+			</where>
+		 <jqorderby>#{$JQORDERBY}</jqorderby>
+		</select>
+	    <select id="load_service"><![CDATA[
+			select * from (select t.function_id, s.service_id, s.service_name, s.title,t.last_update_date
+		  from sys_function_service t, sys_service s
+		 where t.service_id = s.service_id) v
+		 ]]>
+		 <where>
+				<name type="normal"><![CDATA[ #{$JQGRID}]]></name><!--拼接jqgrid自带的查询条件所用 -->
+				<name type="force"><![CDATA[ function_id = #{function_id}]]></name>
+		 </where>
+		 <orderby>last_update_date desc</orderby> 
+		 <jqorderby>#{$JQORDERBY}</jqorderby>
+		</select>	
+     </query>
+ <!-- **************************************************************************************************************************** -->
+  <update>
+   <execute id="fun_add">
+    <parameters>
+                <parameter type="out">#{function_id}:= LAST_INSERT_ID() </parameter>
+    </parameters>
+   <![CDATA[
+		   insert into sys_function
+				  (function_code,
+				   function_name,
+				   function_type,
+				   parent_function_id,
+				   module_id,
+				   description,
+				   icon,
+				   sequence,
+				   service_id,
+				   creation_date,
+				   created_by,
+				   last_update_date,
+				   last_updated_by)
+				values
+				  ( #{function_code},
+				   #{description},
+				   #{function_type},
+				   #{parent_function_id},
+				   null,
+				   #{description},
+				   null,
+				   #{sequence},
+				   #{service_id},
+				   now(),
+				   #{/session/user_id},
+				   now(),
+				   #{/session/user_id});
+		 ]]>
+	    </execute>
+   <execute id="fun_update">
+   <![CDATA[       
+         update sys_function set                         
+				   function_code=#{function_code},
+				   function_name=#{description},
+				   description=#{description},
+				   function_type=#{function_type},
+				   parent_function_id=#{parent_function_id},
+				   sequence=#{sequence},
+				   service_id=#{service_id},
+				   last_update_date=now(),
+				   last_updated_by=#{/session/user_id}
+			where function_id=#{function_id};
+		 ]]>
+	 </execute>
+	   <execute id="fun_service_del">
+	   <![CDATA[
+			    delete from sys_function_service  where function_id=#{function_id};
+			 ]]>
+	 </execute>
+	 
+	  <execute id="fun_del">
+	   <![CDATA[
+			    delete from sys_function  where function_id=#{function_id};
+			 ]]>
+	 </execute>  
+	 
+	<!--add、del 和 edit 为grid 行-->
+	<execute id="del"><![CDATA[
+         delete from sys_function_service 
+			 where function_id =#{function_id}
+			   and service_id =#{service_id};
+	 ]]>
+	    </execute>
+		<execute id="edit"><![CDATA[
+		update sys_function_service t
+			   set t.function_id       =#{function_id},
+			       t.service_id          =#{service_id} ,
+			       t.last_update_date=now(),
+			       t.last_updated_by =#{/session/user_id}
+			       where t.function_id=#{function_id}
+			       and t.service_id=#{old_service_id};
+	 ]]>
+	    </execute>
+	    <execute id="add"><![CDATA[
+		     insert into sys_function_service
+				  (function_id,
+				   service_id,
+				   creation_date,
+				   created_by,
+				   last_update_date,
+				   last_updated_by)
+				values
+				  (#{function_id},
+				   #{service_id},
+				   now(),
+				   #{/session/user_id},
+				    now(),
+				   #{/session/user_id}); 
+		 ]]>
+	    </execute>
+	</update>
+</mapper>

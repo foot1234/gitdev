@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mapper>
+	<query>
+        <select id="list_unit"><![CDATA[
+		select v.* from (SELECT
+				  e.unit_id,
+				  e.unit_code,
+				  e.description,
+				  e.company_id,
+				   CONCAT(e.unit_code, '-', e.description) unit_desc,
+				  (SELECT
+				      CONCAT(f.company_code, '-', f.company_short_name)
+				    FROM fnd_companies f
+				    WHERE f.company_id = e.company_id) company_desc,
+				  e.parent_unit_id,
+				  (select CONCAT(u.unit_code, '-', u.description)  from exp_org_unit u where u.unit_id=e.parent_unit_id) parent_unit_desc,
+				  e.chief_position_id,
+				  (SELECT
+				      CONCAT(p.position_code, '-', p.description)
+				    FROM exp_org_position p
+				    WHERE p.position_id = e.chief_position_id) position_desc,
+				  e.enabled_flag
+				FROM exp_org_unit e) v
+		 ]]> 
+		    <where>
+				<name type="normal"><![CDATA[ #{$JQGRID}]]></name><!--拼接jqgrid自带的查询条件所用 -->
+				<name type="normal"><![CDATA[ unit_code like #{unit_code}]]></name>
+				<name type="normal"><![CDATA[ description like #{description}]]></name>
+				<name type="normal"><![CDATA[ company_id = #{company_id}]]></name>
+				<name type="normal"><![CDATA[ enabled_flag = #{enabled_flag}]]></name>
+			    <name type="normal"><![CDATA[ unit_code like #{query_text} or description  like #{query_text}]]></name>
+			</where>
+		 <jqorderby>#{$JQORDERBY}</jqorderby>
+		  <orderby>unit_code</orderby> 
+	    </select>
+	</query>
+	<update>
+		<execute id="edit"><![CDATA[
+		  update exp_org_unit s
+			     set s.unit_code =#{unit_code},
+			          s.description=#{description},
+			          s.company_id=#{company_id},
+			          s.parent_unit_id=#{parent_unit_id},
+			          s.chief_position_id=#{chief_position_id},
+			           s.org_unit_level_id=#{org_unit_level_id},
+			           s.enabled_flag=#{enabled_flag},
+			          s.last_update_date=now(),
+			          s.last_updated_by=#{/session/user_id}
+			   where s.unit_id =#{unit_id};
+	 ]]>
+	    </execute>
+	    <execute id="add"><![CDATA[ 
+		insert into exp_org_unit(
+					  unit_code,
+					  description,
+					  company_id,
+					  parent_unit_id,
+					  chief_position_id,
+					  org_unit_level_id,
+					  enabled_flag,
+					  created_by,
+					  creation_date,
+					  last_updated_by,
+					  last_update_date)VALUES(
+					  #{unit_code},
+					  #{description},
+					  #{company_id},
+					  #{parent_unit_id},
+					  #{chief_position_id},
+					  #{org_unit_level_id},
+					  #{enabled_flag},
+					  #{/session/user_id},
+					  now(),
+					  #{/session/user_id},
+					  now());
+		 ]]>
+	    </execute>
+	</update>
+</mapper>

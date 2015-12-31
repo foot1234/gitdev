@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mapper>
+	<query>
+		<select id="fun_tree"><![CDATA[
+		  SELECT IF(t.role_id IS NULL, 'false', 'true') AS checked,
+			       t.role_id,
+			       IF(t.function_type='G', IFNULL(t.expanded,'closed'), '') state,
+			       t.function_id id,
+			       t.function_code,
+			       t.function_name NAME,
+			       t.function_type,
+			       t.parent_function_id  parentid,
+			       t.sequence,
+			       t.parent_function_name
+			  FROM (SELECT f.function_id,
+			               (SELECT s.role_id
+			                  FROM sys_role_function s
+			                 WHERE s.role_id = #{role_id}
+			                   AND s.function_id = f.function_id) AS role_id,
+			               f.function_code,
+			               f.function_name AS function_name,
+			               f.function_type,
+			               f.parent_function_id,
+			               (IFNULL((SELECT s.sequence
+			                      FROM sys_role_function s
+			                     WHERE s.role_id = #{role_id}
+			                       AND s.function_id = f.function_id),
+			                    f.sequence)) AS sequence,
+			               (SELECT  IF(s.expanded='Y', 'open', 'closed') expanded
+			                  FROM sys_role_function s
+			                 WHERE s.role_id = #{role_id}
+			                   AND s.function_id = f.function_id) AS expanded,
+			               f.description AS parent_function_name
+			          FROM sys_function f
+			          LEFT OUTER JOIN sys_function pf
+			            ON f.parent_function_id = pf.function_id) t
+			 ORDER BY sequence
+		]]>
+			<!--<where>
+				<name type="normal"><![CDATA[ #{$JQGRID}]]></name>
+				<name type="normal"><![CDATA[ workflow_type_code like #{workflow_type_code}]]></name>
+				<name type="normal"><![CDATA[ workflow_type_desc like #{workflow_type_desc}]]></name>
+				<name type="normal"><![CDATA[ description=#{description}]]></name> 
+			   <name type="force"><![CDATA[ trunc(start_date)>=to_date(#{start_date},'yyyy-mm-dd')]]></name>
+			</where>
+			<orderby>start_date desc,user_name</orderby>
+			<jqorderby>#{$JQORDERBY}</jqorderby>-->
+		</select>
+	</query>
+	<update>
+		<execute id="delete"><![CDATA[
+			       delete FROM sys_role_function  where role_id=#{role_id};
+	     ]]></execute>
+	<!-- 保存数据 -->
+		<execute id="insert"><![CDATA[
+				insert into sys_role_function(
+						role_id, 
+						function_id, 
+						sequence, 
+						expanded, 
+						start_date, 
+						end_date, 
+						created_by, 
+						creation_date, 
+						last_updated_by, 
+						last_update_date
+						)values(
+						#{role_id},
+						#{function_id},
+						#{sequence},
+						if(#{state}='open','Y','N'),
+						now(), 
+						null, 
+						#{/session/user_id}, 
+						now(), 
+						#{/session/user_id}, 
+						now());
+	     ]]></execute>
+	 </update>
+</mapper>

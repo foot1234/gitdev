@@ -1,0 +1,327 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+	pageEncoding="UTF-8"%>
+<%@include file="/view/base/resource.jsp" %>
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<style type="text/css">
+		 .ui-header {
+			/*background: url("images/layout-browser-hd-bg.gif") center;*/
+			background:red;
+			color: red;
+		}
+		.label{
+		/*display: block;
+			margin: 20px;
+			padding: 0px 25px;*/
+			height: 1.5em;
+			background: url("${msUrl}/images/bg.png") no-repeat;
+			background-position: 0 -100px;
+			/*overflow: hidden;*/
+		}
+		
+		
+		label input{
+			position: absolute;
+			clip: rect(0 0 0 0);
+		}
+		
+    </style>
+</head>
+<BODY>
+<div class="easyui-panel" title="查询条件" style="width:700px">
+      <form id="queryForm" class="ui-form" method="post"> 
+	            <div data-options="region:'north',split:true" style="padding:5px">  
+	                <input class="hidden" name="role_id">
+	              <!-- <div class="ftitle">维护信息</div>  -->
+		            <div class="fitem">
+						<label>角色:</label>
+						<input class="easyui-validatebox"  id="role_code_id"  style="width:355px;" name="role_code"  >	
+		           </div>  
+	            </div>
+	    </form>
+     <div  style="margin-left:10px;margin-bottom:20px;">  
+			<a href="javascript:void(0)"  class="easyui-linkbutton" data-options="iconCls:'icon-search'"  onclick="querys()" >查询</a>  
+            <a href="javascript:void(0)"  class="easyui-linkbutton" data-options="iconCls:'icon-save'"  onclick="save()" >保存</a>  
+            
+    </div>      
+ </div>
+ <table id="treeTaocan2"  title="功能分配" class="easyui-treegrid" style="width:900px;"></table>
+<!-- <a href="javascript:void(0)" id='addLine_btn' class="easyui-linkbutton" data-options="iconCls:'icon-redo'" onclick="getSelected()"  >获取</a>  
+  --> 
+<div id="g_lov_show"></div>
+
+
+  <script type="text/javascript">
+  var g_record=[];
+  var g_count=0;
+  var g_iddd="";
+  var g_role_combox_url="initPage.shtml?uri=sys/SYS001/sys_role_comlov_fun";
+  var g_nodes="";
+  $('#role_code_id').combobox({
+	  required:true,
+  	  onShowPanel:function(){
+  		 $('#role_code_id').combobox('hidePanel');
+  		 $("#g_lov_show").window({
+  	         width: 580,
+  	          modal: true,
+  	          height: 490,
+  	         title:"lov查询",
+  	         iconCls:'icon-search',
+  	         href: g_role_combox_url,
+  	         onClose:function(){ 
+  	        	 var lov_data=window.lov_record;//接收lov选择的值
+  			        	if( lov_data==null || lov_data==undefined ||lov_data==''){}//说明没有选择值，直接关闭
+  			        	 else{
+  				          $('#queryForm').form('setValue',{
+  				        			 'role_id':lov_data['role_id']
+  				        			 });	 
+  				         $("#role_code_id").combobox('setValue',lov_data['role_code']+'-'+lov_data['role_name']);
+  				       querys();//触发查询
+  			         }
+  	             }
+  	        });
+  	 }
+  });	
+
+  function querys(){
+	//校验必输域
+		 if(!$('#queryForm').form('validate'))
+		{
+			return; 
+	     }
+	  var formrecord=$('#queryForm').form('serialize');
+	  //formrecord['query_text']=$('#query_text_id').searchbox('getValue');//特殊处理
+	  var record="["+JSON.stringify(formrecord)+"]";   //对象数组转换为json
+	  var alert_flag=0;
+	  $("#treeTaocan2").treegrid({ 
+			 url:'ToDoGo.do?actionId=query/tree@fun_tree&dataSorce=xml/sys/SYS002/sys_role_function.xml',
+			 queryParams: {_para:record},
+			 onLoadError : function(err,a) {
+		    	 if(alert_flag==0)$.messager.alert("提示", err.responseText+a, "error");
+		    	  alert_flag=1;
+		       }
+			 });
+	} 
+ 
+  function checkbox_s (value, rowData, rowIndex){
+	  if(rowData.function_type=='G'){
+	    return value == 'open' ? '<input name="state"  id="state_"'+rowData.id+'"  type="checkbox" checked >': '<input name="state"  type="checkbox">';
+	  }else{
+		    return '<input name="state"  id="state_"'+rowData.id+'"  type="checkbox"  disabled="disabled">';
+	  }
+}
+  //获取选中记录
+  function inserte_checked(inserted){
+	  inserted.forEach(function(item,i){
+	    	if(item.checked=="true")//获取选中记录
+	    	{
+	    		g_record[g_count]={_parentId: item._parentId,
+						    			    checked: item.checked,
+						    			    function_id:item.id,
+						    				function_code: item.function_code,
+						    				function_type: item.function_type,
+						    				id: item.id,
+						    				name: item.name,
+						    				parent_function_name: item.parent_function_name,
+						    				role_id: item.role_id,
+						    				sequence: item.sequence,
+						    				state: item.state};
+	    		g_count++;
+	    	}
+	    	try{
+		    	if(item.children.length>0){
+		    		inserte_checked(item.children);//存在子类，回调检查
+		    	}
+	    	}catch(e){}
+	  });
+  }
+
+
+ function save(){
+	$('#treeTaocan2').treegrid('endEdit',g_iddd);
+	 var formrecord=$('#queryForm').form('serialize');
+	 var inserted = $("#treeTaocan2").data()['treegrid']['data'];
+	 //var updated = $("#treeTaocan2").datagrid('getChanges', "updated");  
+	 debugger;
+	  g_count=0;//勾选记录清0
+	  g_record=[];
+	  inserte_checked(inserted);//获取勾选记录
+	  g_record.forEach(function(item,i){//设置role_id
+	    	g_record[i]['role_id']=formrecord.role_id;
+	   });
+	    debugger;
+	 var rows=JSON.stringify(g_record);   //对象数组转换为json
+	  $.ajax({
+		   type: "POST",
+		   async: false, //同步请求
+		   url: "ToDoGo.do?actionId=update@delete&dataSorce=xml/sys/SYS002/sys_role_function.xml",
+		   data: {role_id:formrecord.role_id},// _para 代表数组json数据传入，为内定参数
+		   dataType : 'json', 
+		   success: function(data){
+				   $.ajax({
+					   type: "POST",
+					   async: false, //同步请求
+					   url: "ToDoGo.do?actionId=update/batch@insert&dataSorce=xml/sys/SYS002/sys_role_function.xml",
+					   data: { _para:rows},// _para 代表数组json数据传入，为内定参数
+					   dataType : 'json', 
+					   success: function(data){
+						   EyMs.alert('提示','操作成功!','info');    
+					   }, error: function(err){
+						   EyMs.alert('提示',err.responseText,'error');  
+					   }
+				});
+		   }, error: function(err){
+			   EyMs.alert('提示',err.responseText,'error');  
+		   }
+	});
+ } 
+  
+ 
+  
+  $(function(){  
+	   $("#treeTaocan2").treegrid({ 
+	    method: 'get',
+	    idField:'id',  
+	    treeField:'name',  
+	    nowrap: false, 
+	    rownumbers: true,
+	    checkbox: true,
+	    collapsible: true, 
+	    singleSelect: true, 
+	    columns:[[  
+	        {title:'功能名称',field:'name',width:300,formatter:function(value,rowData,rowIndex){
+	                     return "<div id='t_"+rowData.id+"'><input type='checkbox'  id='taocan_"+rowData.id+"'  "+(rowData.checked=='true'?'checked':'')+"/>" + rowData.name+"</div>";
+		        }
+            },
+	        {title:'功能代码','field':'function_code',width:120},
+	        {title:'是否展开','field':'state' ,align:'center' ,width:100,formatter:checkbox_s
+	        	   // ,editor: { type: 'checkbox', options: { on: 'open', off: 'closed' } }
+	         },
+	        {title:'序号','field':'sequence',width:50,editor: { type: 'text',options:{min:0,max:9999,missingMessage:'数字域必须填写0~9999之间的数'}}},
+	        {title:'id','field':'id',width:180},
+	        {title:'checked','field':'checked',width:180}
+	    ]],
+	    onLoadSuccess:function(row,data){
+	    	var root=$("#treeTaocan2").treegrid('getRoots');
+	    	for (var i=0;i<root.length;i++){
+	    		initset(root[i]);
+	    	}
+	    },
+	    onSelect: function(data){
+	    	g_iddd=data.id;
+	    	$('#treeTaocan2').treegrid('beginEdit',data.id);
+        },
+	    onClickRow:function(row){
+	    	   // $('#taocan_'+row.id).prop("readonly",false);
+	             //var flag=$('#taocan_'+row.id).prop("checked");
+	     		// eachloop(row,flag);//子节点
+	     	 	// findpara(row,flag);//父节点
+	     	 	// checkefun(0,row,flag);
+	        },
+	        onClickCell:function(name,row){
+		        	if(name=='name'){
+		        		debugger;
+			        	  var flag=$('#taocan_'+row.id).prop("checked");
+				     		 eachloop(row,flag);//子节点
+				     	 	 findpara(row,flag);//父节点
+				     	 	checkefun(0,row,flag);
+		        	}
+		        	if(name=='state'){
+		        		var state_flag= $('#state_'+row.id).context.activeElement.checked;
+			        	if(state_flag){
+			        		row.state='open';
+			        	}else{
+			        		row.state='closed';
+			        	}
+		        	}
+	        }    
+	  });
+	});
+  //初始化设置
+  function initset(row){
+	  var v_set=true;
+		if(row.children&&row.checked=="true"){//校验等于已经勾选的节点是否有子节点，且子节点是否都是勾上的
+			  $.each(row.children,function(index1,valuerow){
+  		      	 if(valuerow.checked!="true"&&v_set==true)	{//找到没有勾上的子节点
+  		      		v_set=false;
+  		      	   //说明当前节点的有未勾选的子节点，需要在当前节点标注
+  		      		 $('#t_'+row.id).html('<input type="checkbox" id="taocan_'+row.id+'" checked="">'+'<font color="red">*</font>'+row.name);
+  		      	   initset(valuerow);//递归查找
+  		      	 }
+			   })
+		}  
+  }
+  
+  function eachloop(row,flag){
+	  if(row.children){
+  		   $('#t_'+row.id).html('<input type="checkbox" id="taocan_'+row.id+'" checked="">'+row.name);//如果是父节点取消提示
+  		     checkefun(0,row,flag);//设置cheack动作
+		   $.each(row.children,function(index1,value1){
+	      	  checkefun(index1,value1,flag);//设置cheack动作
+	      	  eachloop(value1,flag);//回调函数循环查找
+		   })
+	  }
+  }
+  
+ function findpara(row,flag){//查找父级，子节点选中父节点也选中
+	 if(row._parentId){
+	 		var pararow=$("#treeTaocan2").treegrid('getParent',row.id);
+	 		var action=true;
+	 		var ckallaction=true;
+	 		if(!flag){//取消cheack时需要判断所有子节点都取消完，所有子节点都取消完则需要取消父节点
+		 		$.each(pararow.children,function(index,value){
+		 			if($('#taocan_'+value.id).prop("checked")&&action==true)
+		 				{
+		 				action=false;//不是所有都取消完
+		 				}
+		 		})
+	 		}else{//选中时判断所有子节点是否全部都选中完
+	 			$.each(pararow.children,function(index,value){
+		 			if(!$('#taocan_'+value.id).prop("checked")&&ckallaction==true)
+		 				{
+		 				ckallaction=false;//不是所有都选中了
+		 				}
+		 		})
+	 		}
+	 		if(action==false||ckallaction==false){
+	    		   $('#t_'+pararow.id).html('<input type="checkbox" id="taocan_'+pararow.id+'" checked="">'+'<font color="red">*</font>'+pararow.name);
+	  		}else if(action==true&&ckallaction==true){
+	   		       $('#t_'+pararow.id).html('<input type="checkbox" id="taocan_'+pararow.id+'" checked="">'+pararow.name);
+	  		}
+	 		
+	 		if(action==true){//表述全部取消完，或是有勾选
+	 		   checkefun(0,pararow,flag);//设置cheack动作
+	 		}
+	 		
+	 		findpara(pararow,flag);//回调函数循环查找
+ 	}
+ }
+  
+  function checkefun(index1,para,flag){
+	  //$('#taocan_'+pararow.id).prop("enable",'enable');
+      if(flag){
+    	  para.checked="true";//设置数据状态
+          $('#taocan_'+para.id).prop("checked",true);
+       }else{
+    	   para.checked="false";//设置数据状态
+           $('#taocan_'+para.id).prop("checked",false);
+       }
+  }
+	//获取选中的结点
+	function getSelected(){ 
+	    var idList = "";  
+	     $("input:checked").each(function(){
+	        var id = $(this).attr("id"); 
+	        if (id==''||id==null||id==undefined){}
+	        else{
+			        if(id.indexOf("taocan_")>-1)
+			            idList += id.replace("taocan_",'')+',';
+			     }
+	        })
+	    alert(idList);
+	}
+  </script>  
+</BODY>
+</HTML>

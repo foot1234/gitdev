@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mapper>
+	<query>
+        <select id="list"><![CDATA[
+		 		 SELECT * FROM (
+				 SELECT t1.EMPLOYEE_ID,
+       t1.EMPLOYEE_CODE,
+       t1.NAME,
+       t1.EMAIL,
+       t1.MOBIL,
+       t1.PHONE,
+       t1.BANK_OF_DEPOSIT,
+       t1.BANK_ACCOUNT,
+       t1.FIN_BANK_LEADER_FLAG,
+       t1.ENABLED_FLAG,
+       t1.EMPLOYEE_TYPE_ID,
+       t1.ID_TYPE,
+       t1.ID_CODE,
+       t1.NOTES,
+       t1.NATIONAL_IDENTIFIER,
+       CONCAT(t1.employee_code,' - ',t1.name) AS namecode,
+       r1.DESCRIPTION,
+       (SELECT COUNT(1) FROM exp_employee_accounts a
+                WHERE a.employee_id =t1.employee_id and a.enabled_flag='Y') sub_count
+  FROM EXP_EMPLOYEES t1
+ INNER JOIN EXP_EMPLOYEE_TYPES r1
+    ON t1.EMPLOYEE_TYPE_ID = r1.EMPLOYEE_TYPE_ID) v
+		 ]]>
+		 <where>
+				<name type="normal"><![CDATA[ #{$JQGRID}]]></name><!--拼接jqgrid自带的查询条件所用 -->
+				<name type="normal"><![CDATA[ upper(EMPLOYEE_CODE)   like  upper(#{employee_code})]]></name>
+				<name type="normal"><![CDATA[ NAME like  #{name}]]></name>
+				<name type="normal"><![CDATA[ EMPLOYEE_CODE like #{query_text} or NAME  like #{query_text}]]></name>
+			</where>
+		 <jqorderby>#{$JQORDERBY}</jqorderby>
+		</select>
+<select id="exp_type"><![CDATA[
+				SELECT 
+				  e.employee_type_id,
+				  e.employee_type_code,
+				  e.description 
+				FROM
+				  exp_employee_types e 
+				WHERE e.enabled_flag = 'Y' 
+			]]>
+</select>
+			<select id="company_levels"><![CDATA[
+				SELECT 
+				  t.company_level_id,
+				  t.company_level_code,
+				  CONCAT(t.company_level_code,'-',t.description) description,
+				  t.enabled_flag 
+				FROM
+				  fnd_company_levels t 
+				WHERE t.enabled_flag = 'Y' 
+			]]>
+		</select>
+	</query>
+	<update>
+		<execute id="add">
+		 <parameters>
+		        <parameter type="out">#{employee_id}:= LAST_INSERT_ID()</parameter>
+            </parameters>
+		<![CDATA[
+		INSERT INTO EXP_EMPLOYEES (
+					employee_code,
+					name,
+					email,
+					mobil,
+					phone,
+					enabled_flag,
+					created_by,
+					creation_date,
+					last_updated_by,
+					last_update_date,
+					employee_type_id,
+					notes)
+					  VALUES 
+					(#{employee_code},
+					#{name},
+					#{email},
+					#{mobil},
+					#{phone},
+					#{enabled_flag},
+					 #{/session/user_id},
+					now(),
+					 #{/session/user_id},
+					now(),
+					#{employee_type_id},
+					#{notes});
+	 ]]>
+	    </execute> 
+	    	<execute id="edit"><![CDATA[
+		update EXP_EMPLOYEES e set
+					e.employee_code=	#{employee_code},
+					e.name=#{name},
+					e.email=#{email},
+					e.mobil=#{mobil},
+					e.phone=#{phone},
+					e.enabled_flag=	#{enabled_flag},
+					e.last_updated_by= #{/session/user_id},
+					e.last_update_date=now(),
+					e.employee_type_id=#{employee_type_id},
+					e.notes=#{notes}
+              where e.employee_id=#{employee_id};
+	 ]]>
+	    </execute> 
+	    	<!--<execute id="del"><![CDATA[
+		delete from EXP_EMPLOYEES 
+              where employee_id=#{employee_id};
+	 ]]>
+	    </execute>   -->
+	</update>
+</mapper>

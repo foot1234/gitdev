@@ -1,0 +1,314 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mapper>
+	<query>
+        <select id="list"><![CDATA[
+			select * from (SELECT e.workflow_id,
+			       e.workflow_code,
+			       e.name_id,
+			       (select DESCRIPTION_TEXT
+			          from fnd_descriptions
+			         where DESCRIPTION_ID = e.name_id
+			           and Language = 'ZHS') AS name,
+			       e.display_form,
+			       e.update_form,
+			       e.can_cancel,
+			       decode(e.can_cancel, 1, '是', 0, '否') AS can_cancel_display,
+			       e.status,
+			       decode(e.status, 0, '有效', -1, '无效') AS status_display,
+			       e.workflow_category,
+			       ( select v.code_value_name
+					   from sys_codes a, sys_code_values_vl v
+					  where a.code_id = v.code_id
+					    and a.code='WFL_WORKFLOW_CATEGORY'
+					    and a.enabled_flag='Y'
+					    and v.code_value = e.workflow_category) workflow_category_display,
+			       e.finish_procedure,
+			       pc.PROC_DISPLAY AS finish_procedure_name,
+			       disf.SERVICE_DISPLAY AS display_form_display,
+			       updf.SERVICE_DISPLAY AS update_form_display
+			  FROM wfl_workflow e
+			  LEFT OUTER JOIN WFL_WORKFLOW_PROCEDURE_VL pc
+			    ON e.finish_procedure = pc.PROC_NAME
+			   AND e.workflow_id = pc.WORKFLOW_ID
+			  LEFT OUTER JOIN WFL_WORKFLOW_PAGE_VL disf
+			    ON e.display_form = disf.SERVICE_NAME
+			  LEFT OUTER JOIN WFL_WORKFLOW_PAGE_VL updf
+			    ON e.update_form = updf.SERVICE_NAME
+			) v
+		 ]]>
+		 <where>
+				<name type="normal"><![CDATA[ #{$JQGRID}]]></name><!--拼接jqgrid自带的查询条件所用 -->
+				<name type="normal"><![CDATA[ workflow_id =  #{workflow_id}]]></name>
+				<name type="normal"><![CDATA[ workflow_code like  #{workflow_code}]]></name>
+				<name type="normal"><![CDATA[ name like #{name}]]></name>
+				<name type="normal"><![CDATA[ can_cancel = #{can_cancel}]]></name>
+				<name type="normal"><![CDATA[ status = #{status}]]></name>
+			   <name type="normal"><![CDATA[ workflow_code like #{query_text} or name  like #{query_text}]]></name>
+			</where>
+		 <orderby>workflow_code</orderby> 
+		 <jqorderby>#{$JQORDERBY}</jqorderby>
+		</select>
+		<select id="action"><![CDATA[
+				select * from (SELECT e.action_id,
+			       e.workflow_id,
+			       e.is_reserved,
+			       e.action_type,
+			       (select code_value_name
+			          from sys_service_lookup_v
+			         where code = 'WFL_WORKFLOW_ACTION_TYPE'
+			           and code_value = to_char(e.action_type)
+			           and language = 'ZHS') AS action_type_display,
+			       e.perform_procedure,
+			       (select DESCRIPTION_TEXT
+			          from fnd_descriptions
+			         where DESCRIPTION_ID = e.action_title_id
+			           and Language = 'ZHS') AS action_title,
+			       e.action_title_id,
+			       e.status,
+			       e.sendback_node_id,
+			       (select name
+			          from wfl_workflow_node_vl
+			         where node_id = e.sendback_node_id) AS sendback_node_id_display
+			  FROM wfl_workflow_action e
+			) v
+		 ]]>
+		 <where>
+				<name type="normal"><![CDATA[ workflow_id =  #{workflow_id}]]></name>
+				<name type="normal"><![CDATA[ action_id =  #{action_id}]]></name>
+		</where>
+		 <orderby>action_id</orderby> 
+		</select>
+		<select id="wfl_procedure"><![CDATA[
+				select * from (SELECT e.record_id,
+			       e.workflow_id,
+			       e.proc_name,
+			       (select DESCRIPTION_TEXT
+			          from fnd_descriptions
+			         where DESCRIPTION_ID = e.proc_display_id
+			           and Language = 'ZHS') AS proc_display,
+			       e.PROC_DISPLAY_ID,
+			       (select DESCRIPTION_TEXT
+			          from fnd_descriptions
+			         where DESCRIPTION_ID = e.description_id
+			           and Language = 'ZHS') AS description,
+			       e.DESCRIPTION_ID,
+			       e.proc_type,
+			       (select code_value_name
+			          from sys_service_lookup_v
+			         where code = 'WFL_WORKFLOW_PROC_TYPE'
+			           and code_value = to_char(e.proc_type)
+			           and language = 'ZHS') AS proc_type_display
+			  FROM wfl_workflow_procedure e
+			) v
+		 ]]>
+		 <where>
+				<name type="normal"><![CDATA[ workflow_id =  #{workflow_id}]]></name>
+				<name type="normal"><![CDATA[ record_id =  #{record_id}]]></name>
+		</where>
+		 <orderby>record_id</orderby> 
+		</select>
+     </query>
+ <!-- **************************************************************************************************************************** -->
+  <update>
+  	<execute id="edit"><![CDATA[
+  	   declare
+                  v_fnd_description_id number;
+		begin
+		  if #{workflow_id} is null then
+		   	            v_fnd_description_id:=  fnd_description_pkg.get_fnd_description_id;
+					    fnd_description_pkg.insert_fnd_descriptions(p_description_id   =>v_fnd_description_id,
+					                                              p_ref_table        =>'WFL_WORKFLOW',
+					                                              p_ref_field        =>'NAME_ID',
+					                                              p_description_text =>#{name},
+					                                              p_created_by       =>#{/session/user_id},
+					                                              p_last_updated_by  =>#{/session/user_id},
+					                                              p_language_code    =>'ZHS');
+		               insert into wfl_workflow(workflow_id, 
+							workflow_code, 
+							status, 
+							is_restricted, 
+							date_from, 
+							date_to, 
+							object_version_number, 
+							finish_procedure, 
+							name_id, 
+							description_id, 
+							display_form, 
+							update_form, 
+							check_proc, 
+							can_cancel, 
+							is_self_re_commit, 
+							workflow_category, 
+							created_by, 
+							creation_date, 
+							last_updated_by, 
+							last_update_date
+							)values(wfl_workflow_s.nextval, 
+							#{workflow_code}, 
+							#{status}, 
+							#{is_restricted}, 
+							to_date(#{date_from},'yyyy/mm/dd'),
+							to_date(#{date_to},'yyyy/mm/dd'),
+							#{object_version_number}, 
+							#{finish_procedure}, 
+							v_fnd_description_id, 
+							v_fnd_description_id, 
+							#{display_form}, 
+							#{update_form}, 
+							#{check_proc}, 
+							#{can_cancel}, 
+							#{is_self_re_commit}, 
+							#{workflow_category}, 
+							#{/session/user_id},
+							sysdate, 
+							#{/session/user_id},
+							sysdate);
+		  else
+		  fnd_description_pkg.update_fnd_descriptions(p_description_id   =>#{name_id},
+								                                           p_description_text =>#{name},
+								                                           p_last_updated_by  =>#{/session/user_id},
+								                                           p_language_code    =>'ZHS');			
+			update wfl_workflow s set 
+					    s.workflow_code=#{workflow_code}, 
+						s.status=#{status}, 
+						s.is_restricted=0, 
+						s.date_from=sysdate-1, 
+						s.date_to=null, 
+						s.object_version_number=0, 
+						s.finish_procedure=#{finish_procedure}, 
+						s.display_form=#{display_form}, 
+						s.update_form=#{update_form}, 
+						s.check_proc=null, 
+						s.can_cancel=#{can_cancel}, 
+						s.is_self_re_commit=0, 
+						s.workflow_category=#{workflow_category}, 
+						s.last_updated_by=#{/session/user_id},
+						s.last_update_date=sysdate
+					where s.workflow_id=#{workflow_id};
+		  end if;		
+	   end;   
+	 ]]>
+	    </execute>
+	    <!--工作流动作保存 -->
+	   <execute id="action_edit"><![CDATA[
+  	   declare
+                  v_fnd_description_id number;
+		begin
+		  if #{action_id} is null then
+		   	            v_fnd_description_id:=  fnd_description_pkg.get_fnd_description_id;
+					    fnd_description_pkg.insert_fnd_descriptions(p_description_id   =>v_fnd_description_id,
+					                                              p_ref_table        =>'WFL_WORKFLOW_ACTION',
+					                                              p_ref_field        =>'ACTION_TITLE_ID',
+					                                              p_description_text =>#{action_title},
+					                                              p_created_by       =>#{/session/user_id},
+					                                              p_last_updated_by  =>#{/session/user_id},
+					                                              p_language_code    =>'ZHS');
+		               insert into wfl_workflow_action(
+		               									action_id, 
+														workflow_id, 
+														action_type, 
+														action_title_id, 
+														creation_date, 
+														created_by, 
+														last_update_date, 
+														last_updated_by
+							)values(wfl_workflow_action_s.nextval, 
+							#{workflow_id}, 
+							#{action_type}, 
+							v_fnd_description_id, 
+							sysdate, 
+							#{/session/user_id},
+							sysdate,
+						   #{/session/user_id});
+		  else
+		  fnd_description_pkg.update_fnd_descriptions(p_description_id   =>#{action_title_id},
+								                                           p_description_text =>#{action_title},
+								                                           p_last_updated_by  =>#{/session/user_id},
+								                                           p_language_code    =>'ZHS');			
+			update wfl_workflow_action s set 
+					    s.action_type=#{action_type},
+						s.last_updated_by=#{/session/user_id},
+						s.last_update_date=sysdate
+					where s.action_id=#{action_id};
+		  end if;		
+	   end;   
+	 ]]>
+	    </execute>
+	    <!--工作流动作删除 -->
+	     	<execute id="action_del"><![CDATA[
+	     	begin
+	     	 delete from wfl_workflow_action w where w.action_id=#{action_id};
+	     	end;
+	     	 ]]>
+	    </execute>
+	     <!--工作流过程保存 -->
+	   <execute id="proc_edit"><![CDATA[
+			 declare
+			                  v_fnd_description_id number;
+			                  v_fnd_description_id1 number;
+					begin
+					  if #{record_id} is null then
+					   	            v_fnd_description_id:=  fnd_description_pkg.get_fnd_description_id;
+								    fnd_description_pkg.insert_fnd_descriptions(p_description_id   =>v_fnd_description_id,
+								                                              p_ref_table        =>'WFL_WORKFLOW_PROCEDURE',
+								                                              p_ref_field        =>'PROC_DISPLAY_ID',
+								                                              p_description_text =>#{proc_display},
+								                                              p_created_by       =>#{/session/user_id},
+								                                              p_last_updated_by  =>#{/session/user_id},
+								                                              p_language_code    =>'ZHS');
+					   	            v_fnd_description_id1:=  fnd_description_pkg.get_fnd_description_id;
+								    fnd_description_pkg.insert_fnd_descriptions(p_description_id   =>v_fnd_description_id1,
+								                                              p_ref_table        =>'WFL_WORKFLOW_PROCEDURE',
+								                                              p_ref_field        =>'DESCRIPTION_ID',
+								                                              p_description_text =>#{description},
+								                                              p_created_by       =>#{/session/user_id},
+								                                              p_last_updated_by  =>#{/session/user_id},
+								                                              p_language_code    =>'ZHS');                                           
+					               insert into wfl_workflow_procedure(record_id, 
+												workflow_id, 
+												proc_name, 
+												proc_display_id, 
+												description_id, 
+												proc_type, 
+												creation_date, 
+												created_by, 
+												last_update_date, 
+												last_updated_by
+										)values(wfl_workflow_procedure_s.nextval, 
+										#{workflow_id}, 
+										#{proc_name}, 
+										v_fnd_description_id, 
+										v_fnd_description_id1,
+										#{proc_type}, 
+										sysdate, 
+										#{/session/user_id},
+										sysdate,
+										#{/session/user_id});
+					  else
+					  fnd_description_pkg.update_fnd_descriptions(p_description_id   =>#{proc_display_id},
+											                                           p_description_text =>#{proc_display},
+											                                           p_last_updated_by  =>#{/session/user_id},
+											                                           p_language_code    =>'ZHS');	
+					  fnd_description_pkg.update_fnd_descriptions(p_description_id   =>#{description_id},
+											                                           p_description_text =>#{description},
+											                                           p_last_updated_by  =>#{/session/user_id},
+											                                           p_language_code    =>'ZHS');									                                           		
+						update wfl_workflow_procedure s set 
+								    s.proc_name=#{proc_name}, 
+									s.proc_type=#{proc_type},
+									s.last_updated_by=#{/session/user_id},
+									s.last_update_date=sysdate
+								where s.record_id=#{record_id};
+					  end if;		
+				   end;   
+				 ]]>
+	    </execute>
+	    <!--工作流过程删除 -->
+	     	<execute id="proc_del"><![CDATA[
+	     	begin
+	     	 delete from wfl_workflow_procedure w where w.record_id=#{record_id};
+	     	end;
+	     	 ]]>
+	    </execute>
+	</update>
+</mapper>

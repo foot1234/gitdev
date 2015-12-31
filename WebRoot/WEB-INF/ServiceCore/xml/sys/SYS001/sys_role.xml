@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mapper>
+	<query>
+        <select id="role_code"><![CDATA[
+		select v.* from (SELECT fc.role_id,
+	       fc.service_id,
+	       (select t.service_name
+	          from sys_service t
+	         where t.service_id = fc.service_id) AS service_name,
+	       fc.role_code,
+	       fc.role_name,
+	       fc.description as role_description,
+	       DATE_FORMAT(fc.start_date,'%Y-%m-%d') start_date,
+	       DATE_FORMAT(fc.end_date,'%Y-%m-%d') end_date
+	    FROM sys_role fc) v
+		 ]]> 
+		    <where>
+				<name type="normal"><![CDATA[ #{$JQGRID}]]></name><!--拼接jqgrid自带的查询条件所用 -->
+				<name type="normal"><![CDATA[ role_code like #{role_code}]]></name>
+				<name type="normal"><![CDATA[ role_name like #{role_name}]]></name>
+			    <name type="normal"><![CDATA[ role_code like #{query_text} or role_name  like #{query_text}]]></name>
+			</where>
+		 <jqorderby>#{$JQORDERBY}</jqorderby>
+		  <orderby>role_code</orderby> 
+	    </select>
+	</query>
+	<update>
+		<execute id="edit"><![CDATA[
+		  update sys_role s
+			     set s.role_code =#{role_code},
+			          s.role_name=#{role_name},
+			          s.description=#{role_description},
+			          s.start_date=DATE_FORMAT(#{start_date},'%Y-%m-%d'),
+			          s.end_date=DATE_FORMAT(#{end_date},'%Y-%m-%d'),
+			          s.last_update_date=now(),
+			          s.last_updated_by=#{/session/user_id}
+			   where s.role_id =#{role_id};
+	 ]]>
+	    </execute>
+	    <execute id="add"><![CDATA[ 
+			insert into sys_role(
+						role_code, 
+						role_name, 
+						description, 
+						start_date, 
+						end_date, 
+						service_id, 
+						last_update_date, 
+						last_updated_by, 
+						creation_date, 
+						created_by)
+						values(
+						#{role_code},
+						#{role_name},
+						#{role_description},
+						DATE_FORMAT(#{start_date},'%Y-%m-%d'),
+						DATE_FORMAT(#{end_date},'%Y-%m-%d'),
+						null,/*service_id*/
+						now(),
+						 #{/session/user_id},
+						now(),
+						 #{/session/user_id}
+						);
+		 ]]>
+	    </execute>
+	</update>
+</mapper>

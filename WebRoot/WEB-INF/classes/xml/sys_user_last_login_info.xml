@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mapper>
+	<query>
+		<select id="list"><![CDATA[
+		 select CONCAT(srv.role_name , '-' ,fc.COMPANY_SHORT_NAME) as role_company_name,
+        rc.role_id,
+        rc.company_id,
+        (select count(1)
+		  from sys_user_role_groups t
+		 where (t.end_date is null
+		    or t.end_date > now())
+		    and t.user_id=#{/session/user_id}) counts,
+          CONCAT(rc.role_id,'-',rc.company_id) as role_company
+		   from (select s.role_id, s.company_id
+		           from sys_user_logins s
+		          where s.user_id =#{/session/user_id}
+		            and s.login_id = (select max(t.login_id)
+		                                from sys_user_logins t
+		                               where t.user_id =#{/session/user_id}
+		                                 and t.role_id is not null
+		                                 and t.company_id is not null)) rc,
+		        fnd_companies fc,
+		        sys_role srv
+		  where rc.role_id = srv.role_id
+		    and fc.company_id = rc.company_id
+		]]>
+		</select>
+	</query>
+</mapper>

@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mapper>
+	<query>
+        <select id="list"><![CDATA[
+		 		 SELECT * FROM (
+				  SELECT fc.company_id,
+			       fc.company_code,
+			       CONCAT(fc.company_code,'-',fc.company_short_name)  company_desc,
+			       fc.company_short_name,
+			       fc.company_full_name,
+			       fc.company_type,
+			       fc.set_of_books_id,
+			       fc.company_level_id,
+			       fc.chief_position_id,
+			       fc.parent_company_id,
+			       fc.address,
+			        DATE_FORMAT(fc.start_date_active, '%Y-%m-%d') start_date_active,
+			        DATE_FORMAT(fc.end_date_active, '%Y-%m-%d') end_date_active,
+			       (SELECT CONCAT(d.company_level_code, '-', d.description)
+			          FROM fnd_company_levels d
+			           WHERE d.company_level_id = fc.company_level_id) AS company_level_id_display,
+			       (SELECT v.code_value_name
+			          FROM sys_codes s, sys_code_values v
+			         WHERE s.code_id = v.code_id
+			           AND s.code = 'COMPANY_TYPE'
+			           AND v.code_value = fc.COMPANY_TYPE) company_type_display,
+			       (SELECT CONCAT(g.set_of_books_code ,'-' , g.set_of_books_name)
+			          FROM gld_set_of_books g
+			         WHERE g.set_of_books_id = fc.set_of_books_id) set_of_books_id_display,
+			       (SELECT f.company_short_name
+			          FROM fnd_companies f
+			         WHERE f.company_id = fc.parent_company_id) parent_company_id_display
+			  FROM fnd_companies fc ) v
+		 ]]>
+		 <where>
+				<name type="normal"><![CDATA[ #{$JQGRID}]]></name><!--拼接jqgrid自带的查询条件所用 -->
+				<name type="normal"><![CDATA[ upper(company_code)   like  #{company_code}]]></name>
+				<name type="normal"><![CDATA[ company_short_name like  #{company_short_name}]]></name>
+				<name type="normal"><![CDATA[ company_type =  #{company_type}]]></name>
+				<name type="normal"><![CDATA[ set_of_books_id =  #{set_of_books_id}]]></name>
+				<name type="normal"><![CDATA[ company_code like #{query_text} or company_short_name  like #{query_text} or parent_company_id_display  like #{query_text} or set_of_books_id_display  like #{query_text}]]></name>
+			</where>
+		 <jqorderby>#{$JQORDERBY}</jqorderby>
+		</select>
+		<select id="gld_set_of_books"><![CDATA[
+					select t.set_of_books_id,
+			       t.set_of_books_code,
+			       t.set_of_books_name,
+			      CONCAT( t.set_of_books_code,'-',t.set_of_books_name) set_of_books_desc
+			  from gld_set_of_books t
+			  where t.enabled_flag='Y'
+			]]>
+		</select>
+			<select id="company_levels"><![CDATA[
+				SELECT 
+				  t.company_level_id,
+				  t.company_level_code,
+				  CONCAT(t.company_level_code,'-',t.description) description,
+				  t.enabled_flag 
+				FROM
+				  fnd_company_levels t 
+				WHERE t.enabled_flag = 'Y' 
+			]]>
+		</select>
+	</query>
+	<update>
+		<execute id="edit"><![CDATA[
+		call fnd_companies_pro(
+			  #{company_id},
+			  #{company_code}, 
+			  #{company_type}, 
+			  #{company_short_name},
+			  #{company_full_name},
+			   null,/*company_icon*/
+			  #{set_of_books_id}, 
+			  #{address}, 
+			  #{company_level_id}, 
+			  #{parent_company_id}, 
+			  null,/*chief_position_id, */
+			  #{start_date_active},
+			  #{end_date_active}, 
+			  #{/session/user_id}
+			);
+	 ]]>
+	    </execute> 
+	</update>
+</mapper>

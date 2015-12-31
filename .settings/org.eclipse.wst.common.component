@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project-modules id="moduleCoreId" project-version="1.5.0">
+	<wb-module deploy-name="CXFService">
+        <wb-resource deploy-path="/" source-path="/WebRoot"/>
+        <wb-resource deploy-path="/WEB-INF/classes" source-path="/WebRoot/WEB-INF/src"/>
+        <wb-resource deploy-path="/WEB-INF/classes" source-path="/WebRoot/WEB-INF/ServiceCore"/>
+        <wb-resource deploy-path="/WEB-INF/classes" source-path="/WebRoot/WEB-INF/configure"/>
+		<property name="java-output-path" value="/CXFService/WebContent/WEB-INF/classes"/>
+		<property name="context-root" value="CXFService"/>
+	</wb-module>
+</project-modules>

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mapper>
+	<query>
+        <select id="sys_function"><![CDATA[
+		 select function_id, service_id
+			  from sys_function_service t
+			 order by t.service_id, t.function_id
+		 ]]>
+		</select>
+		<select id="role_function"><![CDATA[
+		SELECT t.function_id, t.role_id
+		  FROM sys_role_function t
+		 WHERE (t.end_date IS NULL OR t.end_date >=NOW() )
+		 ORDER BY t.function_id, t.role_id
+		 ]]>
+		</select>
+	</query>
+</mapper>

@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mapper>
+	<query>
+		<select id="listtype"><![CDATA[
+		  select z.workflow_type_id,
+		       z.workflow_type_code,
+		       z.workflow_type_desc,
+		       z.created_by,
+		       z.creation_date,
+		       z.last_updated_by,
+		       z.last_update_date,
+		       z.monthly_checkout_flag
+		  from zj_wfl_workflow_type z
+		]]>
+			<where>
+				<name type="normal"><![CDATA[ #{$JQGRID}]]></name><!--拼接jqgrid自带的查询条件所用 -->
+				<name type="normal"><![CDATA[ workflow_type_code like #{workflow_type_code}]]></name>
+				<name type="normal"><![CDATA[ workflow_type_desc like #{workflow_type_desc}]]></name>
+				<!--<name type="normal"><![CDATA[ description=#{description}]]></name> 
+					<name type="force"><![CDATA[ trunc(start_date)>=to_date(#{start_date},'yyyy-mm-dd')]]></name> -->
+			</where>
+			<!--<orderby>start_date desc,user_name</orderby> -->
+			<jqorderby>#{$JQORDERBY}</jqorderby>
+		</select>
+		<select id="listwfl"><![CDATA[
+		select t.workflow_id,
+		       t.workflow_code,
+		       t.workflow_desc,
+		       t.workflow_type_id,
+		       t.sub_category,
+		       t.enabled_flag,
+		       t.created_by,
+		       t.creation_date,
+		       t.last_updated_by,
+		       t.last_update_date,
+		       t.can_cancel
+		  from zj_wfl_workflow t
+		]]>
+			<where>
+				<name type="normal"><![CDATA[ #{$JQGRID}]]></name><!--拼接jqgrid自带的查询条件所用 -->
+				<name type="force"><![CDATA[workflow_type_id=#{workflow_type_id}]]></name>
+				<name type="normal"><![CDATA[ workflow_code=#{workflow_code}]]></name>
+				<!--<name type="normal"><![CDATA[ description=#{description}]]></name> 
+					<name type="force"><![CDATA[ trunc(start_date)>=to_date(#{start_date},'yyyy-mm-dd')]]></name> -->
+			</where>
+			<!--<orderby>start_date desc,user_name</orderby> -->
+			<jqorderby>#{$JQORDERBY}</jqorderby>
+		</select>
+	</query>
+	<update>
+	<!--add 和 edit 为jqgrid 内定参数-->
+		<execute id="edit"><![CDATA[
+		begin
+			update zj_wfl_workflow_type z 
+	         set z.workflow_type_code	=	#{workflow_type_code},
+	             z.workflow_type_desc	=	#{workflow_type_desc},
+	             z.created_by					=	#{created_by},
+	             z.creation_date				=	to_date(#{creation_date},'yyyy-mm-dd hh24:mi:ss'),
+	             z.last_updated_by			=	#{last_updated_by},
+	             z.last_update_date			=	sysdate,
+	             z.monthly_checkout_flag	=  #{monthly_checkout_flag}
+	      where z.workflow_type_id=#{workflow_type_id};
+	   end;   
+	 ]]>
+	    </execute>
+	    <execute id="add"><![CDATA[
+			begin
+		        insert into zj_wfl_workflow_type
+							    (workflow_type_id,
+							     workflow_type_code,
+							     workflow_type_desc,
+							     monthly_checkout_flag,
+							     created_by,
+							     creation_date,
+							     last_updated_by,
+							     last_update_date)
+							  values
+							    (zj_wfl_workflow_type_s.nextval,
+							    #{workflow_type_code},
+							    #{workflow_type_desc},
+							    #{monthly_checkout_flag},
+							    #{created_by},
+							    to_date(#{creation_date},'yyyy-mm-dd hh24:mi:ss'),
+							    #{last_updated_by},
+							    sysdate
+							    );
+		   end;   
+		 ]]>
+	    </execute>
+	</update>
+</mapper>

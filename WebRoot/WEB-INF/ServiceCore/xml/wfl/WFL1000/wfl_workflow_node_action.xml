@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mapper>
+	<query>
+        <select id="list"><![CDATA[
+			select * from (SELECT e.record_id,
+			at.workflow_id,
+       e.action_id,
+       e.node_id,
+       e.exec_proc,
+       e.order_num,
+       (select vv.proc_display
+          from wfl_workflow_procedure_vl vv
+         where vv.workflow_id =
+               (select workflow_id
+                  from wfl_workflow_node wn
+                 where wn.node_id = e.node_id)
+           and vv.proc_name = e.exec_proc) AS exec_proc_display,
+       (select description_text
+          from fnd_descriptions fd
+         where fd.description_id = at.action_title_id
+           and fd.language = 'ZHS') AS action_id_display,
+       at.action_title_id
+  FROM wfl_workflow_node_action e
+  LEFT OUTER JOIN wfl_workflow_action at
+    ON e.action_id = at.action_id
+			) v
+		 ]]>
+		 <where>
+				<name type="normal"><![CDATA[ #{$JQGRID}]]></name><!--拼接jqgrid自带的查询条件所用 -->
+				<name type="normal"><![CDATA[ workflow_id =  #{workflow_id}]]></name>
+				<name type="normal"><![CDATA[ node_id =  #{node_id}]]></name>
+			</where>
+		 <orderby>order_num</orderby> 
+		 <jqorderby>#{$JQORDERBY}</jqorderby>
+		</select>
+     </query>
+ <!-- **************************************************************************************************************************** -->
+    <update>
+    </update>
+</mapper>

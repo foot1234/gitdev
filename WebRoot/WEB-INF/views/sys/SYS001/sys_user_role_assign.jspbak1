@@ -1,0 +1,370 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+	pageEncoding="UTF-8"%>
+
+<%@include file="/view/base/resource.jsp" %>
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+</head>
+<body>
+
+ <!-- Edit Win&From ****************************************************************************************************************8-->
+     	<form id="showForm" class="ui-form" method="post"> 
+	              <!-- <div class="ftitle">维护信息</div>  --> 
+		           <div class="fitem">
+		              <label>用户名:</label>
+		              <input class="easyui-validatebox" type="text" style="width:155px;" name="user_name"  disabled="true">
+		              <label>描述:</label>
+		             	<input class="easyui-validatebox" type="text" style="width:155px;" name="description"  disabled="true">
+		           </div>  
+	            <div id="toolbar12"  style="margin-left:20px;margin-bottom:10px;margin-top:30px;">  
+			               <a href="javascript:void(0)" id='addLine_btn' class="easyui-linkbutton" data-options="iconCls:'icon-back'"  onclick="closeBack()" >返回</a>  
+			    </div> 
+	         </form>
+			 	<table id="dg1we" class="easyui-datagrid" title="页面分配" style="width:auto;height:300px">
+		        <thead>
+		            <tr>
+		             <th data-options="field:'ck',checkbox:true">ck</th>
+		             <th data-options="field:'user_role_group_id',hidden:true">user_role_group_id</th>
+		             <th data-options="field:'user_id',hidden:true">user_id</th>
+		             <th data-options="field:'role_id',hidden:true">role_id</th>
+		             <th data-options="field:'company_id',hidden:true">company_id</th>
+		              <th data-options="field:'role_code',width:100,editor:{type:'combobox',options: { required: true} }">角色代码</th><!--editor:'text'  -->
+				     <th data-options="field:'role_desc',width:200">角色说明</th>
+				     <th data-options="field:'company_code',width:100,editor:{type:'combobox',options: { required: true} }">机构代码</th><!--editor:'text'  -->
+				     <th data-options="field:'company_desc',width:200">机构说明</th>
+				      <th data-options="field:'start_date',width:100,editor:{type:'datebox' ,options: { required: true} }">启用日期</th><!--editor:'text'  -->
+				     <th data-options="field:'end_date',width:100,editor:{type:'datebox'}">结束日期</th>
+					 <!--<th data-options="field:'title',width:100,editor: { type: 'validatebox', options: { required: true} }">标题</th>  -->
+		            </tr>
+		        </thead>
+		    </table>
+
+<!-- lov面板 -->	
+<!--<div id="edit_test_open1" title="lov1" ></div> -->	
+ <!-- end lov面板 -->
+ 		
+ <script type="text/javascript">
+  var g_user_id= '<%=request.getParameter("user_id")%>';
+  var g_record=window.g_table_record;
+  var g_sub_table_id="#dg1we";
+  var g_role_data='ToDoGo.do?actionId=query@load&dataSorce=xml/sys/SYS001/sys_role_groups.xml';
+  //var g_role_combox_url="initPage.shtml?uri=sys/SYS001/sys_role_comlov";
+  var g_com_combox_url="initPage.shtml?uri=sys/SYS001/fnd_com_comlov";
+	//form初始化
+	$('#showForm').form('load',g_record);
+	  var alert_flag1=0; 
+	  $("#dg1we").datagrid({
+		     url: g_role_data,
+		     method: 'get',
+	         queryParams: {user_id:g_user_id},
+			  pagination:true,
+		      fitColumns: true,
+		      rownumbers:true,
+		      collapsible:true,
+			  onLoadSuccess:function(data){//启用消息提示框   
+			    $(g_sub_table_id).datagrid("tooltip");    
+			  debugger;
+			  }, 
+		      onLoadError : function(err,a) {
+		    	 if(alert_flag1==0)$.messager.alert("提示", err.responseText+a, "error");
+		    	 alert_flag1=1;
+		      },
+		     toolbar : [ {text : '添加', iconCls : 'icon-add',handler : add_edit12
+		     }, '-', {text : '保存', iconCls : 'icon-save',handler : add_edit12
+		    }],
+			onClickCell:function(rowIndex, field, value){
+				  debugger;//角色选择列
+				  if(field=='role_code'){//lov列
+					  //value 为null 重新获取
+				      //$('#dg1we').gridlov("lov查询","role_lov_id",g_role_combox_url,rowIndex,field,540,490);
+					  $('#dg1we').gridlov({
+						  title:"lov查询",
+						  id:"role_lov_id",
+						  url:"initPage.shtml?uri=sys/SYS001/sys_role_comlov",
+						  index:rowIndex,
+						  field:field,
+						  width:540,
+						  height:490,
+						  callback:function(index,data,edit){
+							 debugger; 
+							 var lov_data=data;
+							
+							 $('#dg1we').datagrid('updateRow',{index: rowIndex,row: {role_id:lov_data['role_id'],role_code: lov_data['role_code'],role_desc:lov_data['role_name']}});
+							 //	var v_role_code=$('#dg1we').datagrid('getRows')[rowIndex]['role_code'];
+     		                 //   var ed1=$('#dg1we').datagrid('getEditor',{index:rowIndex,field:'role_code'});
+     		                 //  $('#dg1we').actions.setValue(ed1.target,lov_data['role_code']);//edit 赋值
+  		                    /* if(v_role_code==""||v_role_code==null||v_role_code==undefined){
+  		                    	$('#dg1we').datagrid('getRows')[rowIndex]['role_code'] = lov_data['role_code'];//新增赋值
+  		                    	$('#dg1we').datagrid('updateRow',{index: rowIndex,row: {}});//如果为required：true 则需要更新行
+          		                }*/
+						  }
+					  }); 
+				    }
+				//公司选择列
+				  if(field=='company_code'){//lov列
+					  //value 为null 重新获取
+				      //$('#dg1we').gridlov("lov查询","role_lov_id",g_role_combox_url,rowIndex,field,540,490);
+					  $('#dg1we').gridlov({
+						  title:"lov查询",
+						  id:"com_lov_id",
+						  url:"initPage.shtml?uri=sys/SYS001/fnd_com_comlov",
+						  index:rowIndex,
+						  field:field,
+						  width:540,
+						  height:490,
+						  callback:function(data){
+							 debugger; 
+							 var lov_data=data;
+							 $('#dg1we').datagrid('updateRow',
+									 {index: rowIndex,
+								      row: {company_id:lov_data['company_id'],
+								    	      company_code: lov_data['company_code'],
+								    	      company_desc:lov_data['company_short_name']
+							          }});
+						
+						  }
+					  }); 
+				    }
+				  
+		   }
+		}).datagrid('enableCellEditing'); //启用编辑器    
+
+  function add_edit12(callback){
+	var action=callback.currentTarget.text;
+		if ($.trim(action)=='添加'){
+			   append();
+			   debugger;
+		}else if ($.trim(action)=='保存'){
+			 //endEditing();//关闭最后一个编辑行
+			  if(cheak_save()){
+		        var inserted = $(g_sub_table_id).datagrid('getChanges', "inserted");
+		        var deleted = $(g_sub_table_id).datagrid('getChanges', "deleted");
+		        var updated = $(g_sub_table_id).datagrid('getChanges', "updated");  
+		        debugger;
+		        var return_flag=true;
+		           if (deleted.length) {
+		        	   return_flag=update_post(deleted,'del');// 执行删除
+		               }
+			      if (updated.length) {
+			    	  return_flag=update_post(updated,'edit');// 执行更新
+			         }
+		          if (inserted.length) {
+		        	  return_flag=update_post(inserted,'add');// 执行插入
+		        	  }
+		          $(g_sub_table_id).datagrid('acceptChanges'); //界面数据提交
+		           if(return_flag){
+		        	   $.messager.alert("提示", "操作成功!", "info");
+		           }
+			  }else{
+				  //$.messager.alert("提示", "没有数据需要保存!", "error");
+			  }
+		}
+			
+   }
+  
+
+  
+  
+  
+  function cheak_save()
+  {
+ 	   //var rows = $(g_sub_table_id).datagrid('getChanges');
+ 	   var rows = $(g_sub_table_id).datagrid('getRows');
+ 	   
+ 	   debugger;
+ 	   var flag=false;
+ 	   var check_flag=false;
+ 	    //保存验证
+ 		    for(var i=0;i<rows.length;i++){
+ 		    	var index=$(g_sub_table_id).datagrid('getRowIndex', rows[i]);
+ 		    	//$(g_sub_table_id).datagrid('selectRow', index);
+ 		    	 for (var field in rows[i]) 
+ 		    	 {
+ 		    		$(g_sub_table_id). datagrid('editCell', { index: index, field: field }).click();
+ 		    	   debugger;
+ 		    	 }
+ 		    	$('#dg1we').datagrid('beginEdit', index); 
+ 		    	$('#dg1we').datagrid('endEdit', index);
+ 			debugger;
+ 		        if($(g_sub_table_id).datagrid('validateRow', index))
+ 		        {
+ 		        	check_flag=true;
+ 		        }else
+ 		        {   
+ 		        	check_flag=false;
+
+ 		        	$.messager.alert("提示", "必输字段不允许为空!", "error");
+ 		        	break;
+ 		        }
+ 			    
+ 		    }
+ 		    if(check_flag==true){
+ 		    	flag=true;
+ 		    }
+ 	   return flag;
+  }  
+
+  function update_post(records,action_id){
+		if(records.length > 0){
+				var rows=JSON.stringify(records);   //对象数组转换为json
+				var return_s=false;
+				debugger;
+			    $.ajax({
+						   type: "POST",
+						   async: false, //同步请求
+						   url: "ToDoGo.do?actionId=update/batch@"+action_id+"&dataSorce=xml/sys/SYS001/sys_role_groups.xml",
+						   data: { _para:rows},// _para 代表数组json数据传入，为内定参数
+						   dataType : 'json', 
+						   success: function(data){
+							 //  debugger;
+							   //EyMs.alert('提示',data.msg,'info');    
+							   return_s= true;
+						   }, error: function(err){
+							   EyMs.alert('提示',err.responseText,'error');  
+							   return_s= false;
+						   }
+					});
+			     return return_s;
+			}
+	  }
+  
+  
+  
+  //**begin gridedit lovcombox************************************************************************//    
+ /* var editIndex = undefined;//grid 初始化开始
+         $('#dg1we').datagrid({
+         	onSelect: function(index,data){
+         		        $('#dg1we').gridlov(g_role_combox_url,index,"role_code");
+ 	         		//if (editIndex != index){
+ 	                    if (endEditing()){
+ 	                        $('#dg1we').datagrid('beginEdit', index);
+ 	                        editIndex = index;
+ 	                    } else {
+ 	                        $('#dg1we').datagrid('selectRow', editIndex);
+ 	                    }
+ 	               onSelectRow(index,data);
+ 	               $('#dg1we').datagrid('unselectRow', index);
+ 	        	 // }
+         	}		
+         });*/ 
+       
+  /***********************************************************************/   
+  /* function endEditing(){
+             if (editIndex == undefined){return true}
+             if ($('#dg1we').datagrid('validateRow', editIndex)){
+                 $('#dg1we').datagrid('endEdit', editIndex);
+                 editIndex = undefined;
+                 return true;
+             } else {
+                 return false;
+             }
+         }*/   
+         
+         
+  
+
+ function onSelectRow(index,data){
+    /* var ed = $('#dg1we').datagrid('getEditor', { index: index, field: 'role_code' });//获取角色编辑器
+      $(ed.target).combobox({
+    	 required : true,  
+    	 textField:'role_code',
+      	 onShowPanel:function(){
+ 			 $(this).combobox('hidePanel');
+ 			 $("#edit_test_open1").window({
+ 				 width: 580,
+ 		          modal: true,
+ 		          height: 490,
+ 		         title:"lov查询",
+ 		         iconCls:'icon-search',
+ 		         href: g_role_combox_url,
+ 		         onClose:function(){ //lov close 时设置值
+ 		           var lov_data=window.lov_record;//接收lov选择的值
+ 		               var v_role_code=$('#dg1we').datagrid('getRows')[index]['role_code'];
+            		     if( lov_data==null || lov_data==undefined ||lov_data==''){//说明没有选择值，直接关闭
+            		     $('#dg1we').datagrid('getRows')[index]['role_code'] = v_role_code;//直接关闭恢复
+ 		                 $('#dg1we').datagrid('updateRow',{index: index,row: {}});//如果为required：true 则需要更新行
+            		     }else{
+   			        		   // $('#dg1we').datagrid('getRows')[index]['user_id'] = g_user_id; //隐藏域设置
+     		                    $('#dg1we').datagrid('getRows')[index]['role_id'] = lov_data['role_id'];//隐藏域设置
+     		                    $('#dg1we').datagrid('getRows')[index]['role_desc'] = lov_data['role_name'];
+     		                    
+     		                    var ed1=$('#dg1we').datagrid('getEditor',{index:index,field:'role_code'});
+  		                        ed1.actions.setValue(ed.target,lov_data['role_code']);//edit 赋值
+  		                        
+  		                      if(v_role_code==""||v_role_code==null||v_role_code==undefined){
+          		                 $('#dg1we').datagrid('getRows')[index]['role_code'] = lov_data['role_code'];//新增赋值
+          		                 $('#dg1we').datagrid('updateRow',{index: index,row: {}});//如果为required：true 则需要更新行
+          		                }
+   			        	     }
+ 		                 $('#dg1we').datagrid('endEdit', index);
+ 		                
+ 		            }
+ 			 });
+     	 }
+     });//替换text为combogrid编辑器，注意如果要根据当前行的某些数据加载不同的内容，需要动态修改配置中的url
+     $(ed.target).combobox('setValue',data['role_code']);//grid lov bug问题解决(点击输入框原内容消失)*/
+ /*************************************************************************************************************************************/    
+    //机构选择 
+  /*  var edcom =$('#dg1we').datagrid('getEditor', { index: index, field: 'company_code'});//获取机构编辑器
+     $(edcom.target).combobox({
+    	 required : true,  
+    	 textField:'company_code',
+      	 onShowPanel:function(){
+ 			 $(this).combobox('hidePanel');
+ 			 $("#edit_test_open1").window({
+ 				 width: 580,
+ 		          modal: true,
+ 		          height: 490,
+ 		         title:"lov查询",
+ 		         iconCls:'icon-search',
+ 		         href: g_com_combox_url,
+ 		         onClose:function(){ //lov close 时设置值
+ 		           var lov_data=window.lov_record;//接收lov选择的值
+ 		           debugger;
+ 		               var v_company_code=$('#dg1we').datagrid('getRows')[index]['company_code'];
+            		     if( lov_data==null || lov_data==undefined ||lov_data==''){//说明没有选择值，直接关闭
+            		     $('#dg1we').datagrid('getRows')[index]['company_code'] = v_company_code;//直接关闭恢复
+ 		                 $('#dg1we').datagrid('updateRow',{index: index,row: {}});//如果为required：true 则需要更新行
+            		     }else{
+     		                    $('#dg1we').datagrid('getRows')[index]['company_id'] = lov_data['company_id'];//隐藏域设置
+     		                    $('#dg1we').datagrid('getRows')[index]['company_desc'] = lov_data['company_short_name'];
+     		                    
+     		                   edcom.actions.setValue(edcom.target,lov_data['company_code']);//edit 赋值
+     		                   
+     		                  if(v_company_code==""||v_company_code==null||v_company_code==undefined){
+           		                 $('#dg1we').datagrid('getRows')[index]['company_code'] = lov_data['company_code'];//新增赋值
+           		                 $('#dg1we').datagrid('updateRow',{index: index,row: {}});//如果为required：true 则需要更新行
+           		                }
+     		                   
+   			        	     }
+ 		                 $('#dg1we').datagrid('endEdit', index);  
+ 		            }
+ 			 });
+     	 }
+     });//替换text为combogrid编辑器，注意如果要根据当前行的某些数据加载不同的内容，需要动态修改配置中的url
+     $(edcom.target).combobox('setValue',data['company_code']);//grid lov bug问题解决(点击输入框原内容消失)*/
+}
+
+ 
+ function append(){
+	 $('#dg1we').datagrid('insertRow',{index:0,row:{user_id:g_user_id}});
+	// $('#dg1we').datagrid('updateRow',{index: rowIndex,row: {}});
+
+	   /* if (endEditing()){
+	        //$('#dg').datagrid('appendRow',{function_id:g_function_id});
+	       
+	          });
+	    }*/
+	    
+	}
+  
+  function closeBack()//返回
+   {
+	 $("#edit_role").dialog('close'); 
+	}	  
+    </script>    
+</body>
+</html>
